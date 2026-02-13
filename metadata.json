@@ -1,0 +1,5 @@
+{
+  "name": "TextPro - Ultimate Text Manipulation Studio",
+  "description": "A comprehensive suite of text manipulation tools including splitting, counting, reformating, diffing, JSON formatting, and Markdown previewing, powered by Gemini AI for smart processing.",
+  "requestFramePermissions": []
+}
