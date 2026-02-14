@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Scissors, Copy, ChevronDown } from 'lucide-react';
 import Toast from './Toast';
 
 const TextSplitter: React.FC = () => {
-  const [text, setText] = useState('');
-  const [delimiter, setDelimiter] = useState('\n');
-  const [customDelimiter, setCustomDelimiter] = useState('');
+  const [text, setText] = usePersistedState('tp:splitter:text', '');
+  const [delimiter, setDelimiter] = usePersistedState('tp:splitter:delimiter', '\n');
+  const [customDelimiter, setCustomDelimiter] = usePersistedState('tp:splitter:customDelimiter', '');
+  const [charLimit, setCharLimit] = usePersistedState('tp:splitter:charLimit', '');
   const [results, setResults] = useState<string[]>([]);
   const [showToast, setShowToast] = useState(false);
 
@@ -16,10 +18,23 @@ const TextSplitter: React.FC = () => {
     { label: 'Comma (,)', value: ',' },
     { label: 'Space', value: ' ' },
     { label: 'Pipe (|)', value: '|' },
+    { label: 'Char Limit', value: 'char_limit' },
     { label: 'Custom', value: 'custom' },
   ];
 
   const handleSplit = () => {
+    if (delimiter === 'char_limit') {
+      const limit = parseInt(charLimit);
+      if (isNaN(limit) || limit <= 0) return;
+
+      const chunks = [];
+      for (let i = 0; i < text.length; i += limit) {
+        chunks.push(text.slice(i, i + limit));
+      }
+      setResults(chunks);
+      return;
+    }
+
     const activeDelimiter = delimiter === 'custom' ? customDelimiter : delimiter;
     if (!activeDelimiter) return;
     const parts = text.split(activeDelimiter).filter(p => p.trim() !== '');
@@ -36,7 +51,7 @@ const TextSplitter: React.FC = () => {
       <ToolLayout
         description="Split large text blocks into smaller parts using custom delimiters."
         actions={
-          <button 
+          <button
             onClick={handleSplit}
             className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm"
           >
@@ -60,22 +75,30 @@ const TextSplitter: React.FC = () => {
                   <button
                     key={mode.label}
                     onClick={() => setDelimiter(mode.value)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all border ${
-                      delimiter === mode.value 
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all border ${delimiter === mode.value
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-md'
                       : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
+                      }`}
                   >
                     {mode.label}
                   </button>
                 ))}
               </div>
               {delimiter === 'custom' && (
-                <input 
+                <input
                   type="text"
                   placeholder="Enter custom delimiter..."
                   value={customDelimiter}
                   onChange={(e) => setCustomDelimiter(e.target.value)}
+                  className="mt-2 w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 transition-all focus:outline-none"
+                />
+              )}
+              {delimiter === 'char_limit' && (
+                <input
+                  type="number"
+                  placeholder="Enter character limit..."
+                  value={charLimit}
+                  onChange={(e) => setCharLimit(e.target.value)}
                   className="mt-2 w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 transition-all focus:outline-none"
                 />
               )}
@@ -104,7 +127,7 @@ const TextSplitter: React.FC = () => {
                     <div className="text-sm text-slate-700 dark:text-slate-300 font-mono break-all pr-8">
                       {result}
                     </div>
-                    <button 
+                    <button
                       onClick={() => copyChunk(result)}
                       className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Copy this chunk"

@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState';
 import * as Diff from 'diff';
 import ToolLayout from './ToolLayout';
 import { FileDiff, Columns, ArrowLeft, AlignJustify, Type, AlignLeft } from 'lucide-react';
@@ -7,14 +8,14 @@ import { FileDiff, Columns, ArrowLeft, AlignJustify, Type, AlignLeft } from 'luc
 type DiffMode = 'lines' | 'words' | 'chars';
 
 const DiffViewer: React.FC = () => {
-  const [textA, setTextA] = useState('');
-  const [textB, setTextB] = useState('');
+  const [textA, setTextA] = usePersistedState('tp:diff:textA', '');
+  const [textB, setTextB] = usePersistedState('tp:diff:textB', '');
   const [showDiff, setShowDiff] = useState(false);
-  const [mode, setMode] = useState<DiffMode>('lines');
+  const [mode, setMode] = usePersistedState<DiffMode>('tp:diff:mode', 'lines');
 
   const diffResult = useMemo(() => {
     if (!showDiff) return [];
-    
+
     switch (mode) {
       case 'chars':
         return Diff.diffChars(textA, textB);
@@ -38,13 +39,12 @@ const DiffViewer: React.FC = () => {
             return lines.map((line, lineIdx) => {
               const currentLineNumber = part.removed ? null : (part.added ? null : lineIndex++);
               return (
-                <div 
+                <div
                   key={`${index}-${lineIdx}`}
-                  className={`flex items-start gap-4 px-2 py-0.5 ${
-                    part.added ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 
-                    part.removed ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' : 
-                    'text-slate-600 dark:text-slate-400'
-                  }`}
+                  className={`flex items-start gap-4 px-2 py-0.5 ${part.added ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' :
+                    part.removed ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' :
+                      'text-slate-600 dark:text-slate-400'
+                    }`}
                 >
                   <span className="w-8 select-none text-slate-300 dark:text-slate-600 text-right text-xs pt-0.5">
                     {currentLineNumber || ''}
@@ -67,11 +67,10 @@ const DiffViewer: React.FC = () => {
         {diffResult.map((part, index) => (
           <span
             key={index}
-            className={`${
-              part.added ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-b-2 border-green-300 dark:border-green-700 decoration-clone py-0.5' : 
-              part.removed ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 line-through decoration-red-300 dark:decoration-red-700 decoration-clone py-0.5 opacity-60' : 
-              'text-slate-700 dark:text-slate-300'
-            }`}
+            className={`${part.added ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-b-2 border-green-300 dark:border-green-700 decoration-clone py-0.5' :
+              part.removed ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 line-through decoration-red-300 dark:decoration-red-700 decoration-clone py-0.5 opacity-60' :
+                'text-slate-700 dark:text-slate-300'
+              }`}
           >
             {part.value}
           </span>
@@ -85,14 +84,14 @@ const DiffViewer: React.FC = () => {
       description="Compare two text sources to identify additions, removals, and changes with varying levels of granularity."
       actions={
         showDiff ? (
-           <button 
+          <button
             onClick={() => setShowDiff(false)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <ArrowLeft size={16} /> Back to Edit
           </button>
         ) : (
-          <button 
+          <button
             onClick={() => setShowDiff(true)}
             disabled={!textA && !textB}
             className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -125,53 +124,50 @@ const DiffViewer: React.FC = () => {
         </div>
       ) : (
         <div className="flex flex-col h-full min-h-[35rem]">
-           <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-4">
-             {/* Legend */}
-             <div className="flex items-center gap-6">
-               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                 <div className="w-3 h-3 bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded"></div> Removed
-               </div>
-               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                 <div className="w-3 h-3 bg-green-100 dark:bg-green-900/50 border border-green-200 dark:border-green-800 rounded"></div> Added
-               </div>
-             </div>
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Legend */}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <div className="w-3 h-3 bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded"></div> Removed
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <div className="w-3 h-3 bg-green-100 dark:bg-green-900/50 border border-green-200 dark:border-green-800 rounded"></div> Added
+              </div>
+            </div>
 
-             {/* Mode Selector */}
-             <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                <button
-                  onClick={() => setMode('lines')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                    mode === 'lines' 
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            {/* Mode Selector */}
+            <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+              <button
+                onClick={() => setMode('lines')}
+                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'lines'
+                  ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
-                >
-                  <AlignJustify size={14} /> Lines
-                </button>
-                <button
-                  onClick={() => setMode('words')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                    mode === 'words' 
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              >
+                <AlignJustify size={14} /> Lines
+              </button>
+              <button
+                onClick={() => setMode('words')}
+                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'words'
+                  ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
-                >
-                  <AlignLeft size={14} /> Words
-                </button>
-                <button
-                  onClick={() => setMode('chars')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                    mode === 'chars' 
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              >
+                <AlignLeft size={14} /> Words
+              </button>
+              <button
+                onClick={() => setMode('chars')}
+                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'chars'
+                  ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
-                >
-                  <Type size={14} /> Chars
-                </button>
-             </div>
-           </div>
-           
-           {renderContent()}
+              >
+                <Type size={14} /> Chars
+              </button>
+            </div>
+          </div>
+
+          {renderContent()}
         </div>
       )}
     </ToolLayout>

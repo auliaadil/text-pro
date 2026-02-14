@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { GeminiService } from '../services/geminiService';
 import { Sparkles, Send, Copy, Loader2 } from 'lucide-react';
 import Toast from './Toast';
 
 const AiAssistant: React.FC = () => {
-  const [text, setText] = useState('');
-  const [instruction, setInstruction] = useState('Summarize this text in 3 bullet points.');
-  const [result, setResult] = useState('');
+  const [text, setText] = usePersistedState('tp:ai:text', '');
+  const [instruction, setInstruction] = usePersistedState('tp:ai:instruction', 'Summarize this text in 3 bullet points.');
+  const [result, setResult] = usePersistedState('tp:ai:result', '');
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
@@ -104,7 +105,7 @@ const AiAssistant: React.FC = () => {
                 <span className="text-xs font-bold uppercase tracking-widest">AI Result</span>
               </div>
               {result && (
-                <button 
+                <button
                   onClick={handleCopy}
                   className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm"
                 >
@@ -112,7 +113,7 @@ const AiAssistant: React.FC = () => {
                 </button>
               )}
             </div>
-            
+
             <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-y-auto shadow-inner relative group">
               {!loading && !result ? (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-50 space-y-4 text-center">

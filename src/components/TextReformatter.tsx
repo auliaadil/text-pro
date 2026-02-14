@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Copy, Wand2, ArrowRightLeft, ArrowDown } from 'lucide-react';
 import Toast from './Toast';
 
 const TextReformatter: React.FC = () => {
-  const [input, setInput] = useState('');
-  const [output, setOutput] = useState('');
+  const [input, setInput] = usePersistedState('tp:reformatter:input', '');
+  const [output, setOutput] = usePersistedState('tp:reformatter:output', '');
   const [showToast, setShowToast] = useState(false);
 
   const formatters = [
@@ -37,7 +38,7 @@ const TextReformatter: React.FC = () => {
       <ToolLayout
         description="Instantly change the format of your text with standard conventions and cleaning utilities."
         actions={
-          <button 
+          <button
             onClick={handleCopy}
             disabled={!output}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -57,7 +58,7 @@ const TextReformatter: React.FC = () => {
                 placeholder="Type or paste text here..."
               />
             </div>
-            
+
             <div className="flex justify-center lg:hidden text-slate-300">
               <ArrowDown size={20} />
             </div>

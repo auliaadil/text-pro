@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { usePersistedState } from './hooks/usePersistedState';
 import {
   Hash,
   Scissors,
@@ -27,10 +28,10 @@ import MarkdownViewer from './components/MarkdownViewer';
 import AiAssistant from './components/AiAssistant';
 
 const App: React.FC = () => {
-  const [activeTool, setActiveTool] = useState<ToolType>(ToolType.COUNTER);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeTool, setActiveTool] = usePersistedState<ToolType>('tp:activeTool', ToolType.COUNTER);
+  const [isCollapsed, setIsCollapsed] = usePersistedState('tp:sidebarCollapsed', false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = usePersistedState('tp:darkMode', false);
 
   const [isScrollingAllowed, setIsScrollingAllowed] = useState(!isCollapsed);
 

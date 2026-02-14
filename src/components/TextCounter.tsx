@@ -1,11 +1,12 @@
 
 import React, { useState, useMemo } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Copy, Trash2, Clock, AlignLeft, Hash } from 'lucide-react';
 import Toast from './Toast';
 
 const TextCounter: React.FC = () => {
-  const [text, setText] = useState('');
+  const [text, setText] = usePersistedState('tp:counter:text', '');
   const [showToast, setShowToast] = useState(false);
 
   const stats = useMemo(() => {
@@ -27,18 +28,18 @@ const TextCounter: React.FC = () => {
 
   return (
     <>
-      <ToolLayout 
+      <ToolLayout
         description="Calculate real-time statistics for your text including word count, character count, and estimated reading time."
         actions={
           <>
-            <button 
+            <button
               onClick={handleCopy}
               disabled={!text}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               <Copy size={16} /> Copy
             </button>
-            <button 
+            <button
               onClick={() => setText('')}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
             >
@@ -54,7 +55,7 @@ const TextCounter: React.FC = () => {
             placeholder="Paste or type your text here..."
             className="w-full flex-1 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none"
           />
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100 dark:divide-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <StatBox icon={<AlignLeft size={16} />} label="Words" value={stats.words} />
             <StatBox icon={<Hash size={16} />} label="Characters" value={stats.chars} />
