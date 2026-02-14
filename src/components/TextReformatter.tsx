@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
-import { Copy, Wand2, ArrowRightLeft, ArrowDown } from 'lucide-react';
+import { Copy, Wand2, ArrowRightLeft, ArrowDown, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const TextReformatter: React.FC = () => {
@@ -38,17 +38,25 @@ const TextReformatter: React.FC = () => {
       <ToolLayout
         description="Instantly change the format of your text with standard conventions and cleaning utilities."
         actions={
-          <button
-            onClick={handleCopy}
-            disabled={!output}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Copy size={16} /> Copy Result
-          </button>
+          <>
+            <button
+              onClick={handleCopy}
+              disabled={!output}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Copy size={16} /> Copy Result
+            </button>
+            <button
+              onClick={() => { setInput(''); setOutput(''); }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            >
+              <Trash2 size={16} /> Clear
+            </button>
+          </>
         }
       >
-        <div className="flex flex-col lg:flex-row h-full min-h-[40rem] p-6 gap-6">
-          <div className="flex-1 flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row h-full min-h-[40rem] divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
+          <div className="flex-1 flex flex-col gap-4 p-6">
             <div className="flex-1 flex flex-col gap-2">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Original Text</label>
               <textarea
@@ -74,7 +82,7 @@ const TextReformatter: React.FC = () => {
             </div>
           </div>
 
-          <div className="w-full lg:w-72 space-y-4 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 pt-6 lg:pt-0 lg:pl-6">
+          <div className="w-full lg:w-72 space-y-4 p-6">
             <div className="flex items-center gap-2 text-slate-400">
               <Wand2 size={16} />
               <span className="text-xs font-bold uppercase tracking-widest">Transformations</span>

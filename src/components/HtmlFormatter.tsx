@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
-import { Copy, Minimize2, AlignLeft } from 'lucide-react';
+import { Copy, Minimize2, AlignLeft, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const HtmlFormatter: React.FC = () => {
@@ -88,6 +88,12 @@ const HtmlFormatter: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
               <Copy size={16} /> Copy
+            </button>
+            <button
+              onClick={() => setInput('')}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            >
+              <Trash2 size={16} /> Clear
             </button>
           </div>
         }

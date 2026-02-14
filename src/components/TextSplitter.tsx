@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
-import { Scissors, Copy, ChevronDown } from 'lucide-react';
+import { Scissors, Copy, ChevronDown, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const TextSplitter: React.FC = () => {
@@ -51,12 +51,20 @@ const TextSplitter: React.FC = () => {
       <ToolLayout
         description="Split large text blocks into smaller parts using custom delimiters."
         actions={
-          <button
-            onClick={handleSplit}
-            className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm"
-          >
-            <Scissors size={16} /> Split Text
-          </button>
+          <>
+            <button
+              onClick={handleSplit}
+              className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm"
+            >
+              <Scissors size={16} /> Split Text
+            </button>
+            <button
+              onClick={() => { setText(''); setResults([]); setCustomDelimiter(''); setCharLimit(''); }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            >
+              <Trash2 size={16} /> Clear
+            </button>
+          </>
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800">

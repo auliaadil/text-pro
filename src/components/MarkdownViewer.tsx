@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 
@@ -32,43 +33,55 @@ const MarkdownViewer: React.FC = () => {
     <ToolLayout
       description="Write and preview GitHub-flavored markdown in a side-by-side view."
       actions={
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+        <>
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('edit')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'edit' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => setViewMode('both')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'both' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
+            >
+              Split
+            </button>
+            <button
+              onClick={() => setViewMode('preview')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'preview' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
+            >
+              Preview
+            </button>
+          </div>
           <button
-            onClick={() => setViewMode('edit')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'edit' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
+            onClick={() => setMd('')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
           >
-            Edit
+            <Trash2 size={16} /> Clear
           </button>
-          <button
-            onClick={() => setViewMode('both')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'both' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
-          >
-            Split
-          </button>
-          <button
-            onClick={() => setViewMode('preview')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'preview' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
-          >
-            Preview
-          </button>
-        </div>
+        </>
       }
     >
-      <div className="flex h-[40rem] p-6 gap-6">
+      <div className={`flex h-[40rem] ${viewMode === 'both' ? 'divide-x divide-slate-100 dark:divide-slate-800' : ''}`}>
         {(viewMode === 'edit' || viewMode === 'both') && (
-          <textarea
-            value={md}
-            onChange={(e) => setMd(e.target.value)}
-            className="flex-1 h-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none leading-normal"
-            placeholder="Write your markdown..."
-          />
+          <div className="flex-1 p-6">
+            <textarea
+              value={md}
+              onChange={(e) => setMd(e.target.value)}
+              className="w-full h-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none leading-normal"
+              placeholder="Write your markdown..."
+            />
+          </div>
         )}
         {(viewMode === 'preview' || viewMode === 'both') && (
-          <div className="flex-1 h-full p-6 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl max-w-none text-slate-900 dark:text-slate-200 leading-tight text-sm">
-            <div
-              className="markdown-preview"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(md) }}
-            />
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="h-full p-6 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl max-w-none text-slate-900 dark:text-slate-200 leading-tight text-sm">
+              <div
+                className="markdown-preview"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(md) }}
+              />
+            </div>
           </div>
         )}
       </div>

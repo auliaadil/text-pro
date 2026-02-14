@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import * as Diff from 'diff';
 import ToolLayout from './ToolLayout';
-import { FileDiff, Columns, ArrowLeft, AlignJustify, Type, AlignLeft } from 'lucide-react';
+import { FileDiff, Columns, ArrowLeft, AlignJustify, Type, AlignLeft, Trash2 } from 'lucide-react';
 
 type DiffMode = 'lines' | 'words' | 'chars';
 
@@ -91,13 +91,21 @@ const DiffViewer: React.FC = () => {
             <ArrowLeft size={16} /> Back to Edit
           </button>
         ) : (
-          <button
-            onClick={() => setShowDiff(true)}
-            disabled={!textA && !textB}
-            className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FileDiff size={16} /> Compare
-          </button>
+          <>
+            <button
+              onClick={() => setShowDiff(true)}
+              disabled={!textA && !textB}
+              className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileDiff size={16} /> Compare
+            </button>
+            <button
+              onClick={() => { setTextA(''); setTextB(''); setShowDiff(false); }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            >
+              <Trash2 size={16} /> Clear
+            </button>
+          </>
         )
       }
     >

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { GeminiService } from '../services/geminiService';
-import { Sparkles, Send, Copy, Loader2 } from 'lucide-react';
+import { Sparkles, Send, Copy, Loader2, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const AiAssistant: React.FC = () => {
@@ -46,6 +46,14 @@ const AiAssistant: React.FC = () => {
     <>
       <ToolLayout
         description="Leverage the power of Gemini AI to perform complex text transformations, translations, and analysis."
+        actions={
+          <button
+            onClick={() => { setText(''); setInstruction('Summarize this text in 3 bullet points.'); setResult(''); }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+          >
+            <Trash2 size={16} /> Clear
+          </button>
+        }
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[45rem]">
           {/* Input Panel */}
