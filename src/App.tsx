@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Moon,
-  Sun
+  Sun,
+  Info
 } from 'lucide-react';
 import { ToolType } from './types';
 import TextCounter from './components/TextCounter';
@@ -26,6 +27,7 @@ import JsonFormatter from './components/JsonFormatter';
 import HtmlFormatter from './components/HtmlFormatter';
 import MarkdownViewer from './components/MarkdownViewer';
 import AiAssistant from './components/AiAssistant';
+import AboutPage from './components/AboutPage';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = usePersistedState<ToolType>('tp:activeTool', ToolType.COUNTER);
@@ -85,6 +87,7 @@ const App: React.FC = () => {
       case ToolType.HTML: return <HtmlFormatter />;
       case ToolType.MARKDOWN: return <MarkdownViewer />;
       case ToolType.AI_ASSISTANT: return <AiAssistant />;
+      case ToolType.ABOUT: return <AboutPage />;
       default: return <TextCounter />;
     }
   };
@@ -169,6 +172,29 @@ const App: React.FC = () => {
 
         {/* Footer Actions */}
         <div className="p-3 mt-auto border-t border-slate-50 dark:border-slate-800 space-y-1">
+          <button
+            onClick={() => {
+              setActiveTool(ToolType.ABOUT);
+              setIsMobileOpen(false);
+            }}
+            className={`
+              group w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200
+              ${activeTool === ToolType.ABOUT
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}
+              ${isCollapsed ? 'justify-center' : ''}
+            `}
+          >
+            <Info size={20} />
+            <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'hidden w-0' : 'block'}`}>
+              About
+            </span>
+            {isCollapsed && (
+              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+                About
+              </div>
+            )}
+          </button>
           <div
             className={`
                flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 transition-colors
@@ -210,7 +236,7 @@ const App: React.FC = () => {
         <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 lg:px-8 pl-20 lg:pl-8 sticky top-0 z-10">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-              {tools.find(t => t.id === activeTool)?.name}
+              {tools.find(t => t.id === activeTool)?.name || 'About'}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">Manage and transform your text efficiently</p>
           </div>

@@ -7,7 +7,8 @@ export enum ToolType {
   JSON = 'json',
   HTML = 'html',
   MARKDOWN = 'markdown',
-  AI_ASSISTANT = 'ai_assistant'
+  AI_ASSISTANT = 'ai_assistant',
+  ABOUT = 'about'
 }
 
 export interface TextStats {
