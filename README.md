@@ -17,6 +17,7 @@ TextPro is a powerful, modern web application designed for developers, writers, 
 - **JSON Formatter**: Validate, beautify, and minify JSON with error detection.
 - **HTML Formatter**: Clean, indent, or minify HTML structure.
 - **Markdown Viewer**: Live split-pane editor for GitHub-flavored markdown.
+- **About Page**: Project information, credits, and quick links.
 
 ### 🤖 AI Power
 - **AI Assistant**: Integrated with Google's Gemini AI to perform complex natural language tasks:
@@ -26,6 +27,10 @@ TextPro is a powerful, modern web application designed for developers, writers, 
   - Tone adjustment
   - Data extraction
 
+### 💾 Local Persistence
+- **Session Saving**: All tool inputs, settings, and active states (like Dark Mode) are automatically saved to `localStorage`.
+- **Privacy Focused**: Your data never leaves your browser (except when using AI features, which go to Google's API).
+
 ## Tech Stack
 
 - **Framework**: React 19 (via ES Modules)
@@ -33,17 +38,42 @@ TextPro is a powerful, modern web application designed for developers, writers, 
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
 - **AI Engine**: Google GenAI SDK (`@google/genai`)
+- **Build Tool**: Vite
 - **Architecture**: Client-side SPA with PWA support (Service Worker & Manifest)
+- **Deployment**: Vercel
 
 ## Installation & Usage
 
-This project is built using modern ES Modules and imports dependencies directly via CDN (`esm.sh`), eliminating the need for complex bundlers like Webpack or Vite for basic execution.
+This project uses **Vite** for a fast development experience and efficient production builds.
 
 1. **Clone the repository**
-2. **Serve the directory**: Use any static file server (e.g., `serve`, `http-server`, or VS Code Live Server).
-3. **Environment**:
-   - To use the AI Assistant, a Google Gemini API Key is required.
-   - The application looks for `process.env.API_KEY` when initializing the Gemini Service.
+   ```bash
+   git clone https://github.com/AuliaAdil/text-pro.git
+   cd text-pro
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for Production**
+   ```bash
+   npm run build
+   ```
+
+5. **Environment Configuration**:
+   - Create a `.env.local` file in the root directory.
+   - Add your Google Gemini API Key:
+     ```
+     GEMINI_API_KEY=your_api_key_here
+     ```
+     *(Required for AI Assistant functionality)*
 
 ## PWA Support
 

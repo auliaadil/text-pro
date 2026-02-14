@@ -26,9 +26,10 @@ npm run preview       # Preview production build
 
 ### Tool System
 The app uses a **tool-based architecture** defined in `src/types.ts`:
-- `ToolType` enum defines all tool identifiers (COUNTER, SPLITTER, REFORMATTER, DIFF, JSON, HTML, MARKDOWN, AI_ASSISTANT)
+- `ToolType` enum defines all tool identifiers (COUNTER, SPLITTER, REFORMATTER, DIFF, JSON, HTML, MARKDOWN, AI_ASSISTANT, ABOUT)
 - `App.tsx` maintains `activeTool` state and renders the appropriate component
 - Tools are self-contained components in `src/components/`
+- **Persistence**: `src/hooks/usePersistedState.ts` handles `localStorage` syncing for all inputs.
 
 ### Component Pattern
 All tools use the `ToolLayout` wrapper component:
@@ -48,12 +49,13 @@ All tools use the `ToolLayout` wrapper component:
 ### Environment Variables
 Set `GEMINI_API_KEY` in `.env.local` or your environment to enable AI features. Vite injects this as `process.env.API_KEY` at build time.
 
-### Dependencies via Import Map
-Dependencies are loaded via `esm.sh` CDN in `index.html` import map, not from node_modules. This includes:
-- `react` and `react-dom` (v19.2.3)
-- `lucide-react` for icons
-- `@google/genai` for AI features
-- `diff` for diff viewer functionality
+### Dependencies
+Managed via `package.json` and `npm`. Key dependencies:
+- `react`, `react-dom` (v19)
+- `lucide-react` (Icons)
+- `@google/genai` (AI SDK)
+- `diff` (Text comparison)
+- `tailwindcss` (Styling)
 
 ### PWA Features
 - Service Worker: `sw.js` (registered in `src/index.tsx`)
