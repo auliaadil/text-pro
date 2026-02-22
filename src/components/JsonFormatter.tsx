@@ -69,8 +69,8 @@ const JsonFormatter: React.FC = () => {
           </div>
         }
       >
-        <div className="flex flex-col h-full min-h-[35rem] p-6">
-          <div className="flex-1 relative">
+        <div className="flex flex-col flex-1 p-6">
+          <div className="flex-1 relative min-h-0">
             <textarea
               value={json}
               onChange={(e) => {

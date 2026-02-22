@@ -242,8 +242,8 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <section className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
-          <div className="max-w-6xl mx-auto h-full">
+        <section className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth flex flex-col">
+          <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col min-h-0">
             {renderTool()}
           </div>
         </section>

@@ -98,7 +98,7 @@ const HtmlFormatter: React.FC = () => {
           </div>
         }
       >
-        <div className="flex flex-col h-full min-h-[35rem] p-6 relative">
+        <div className="flex flex-col flex-1 p-6 relative min-h-0">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
