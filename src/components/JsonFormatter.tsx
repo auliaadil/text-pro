@@ -6,7 +6,7 @@ import { Copy, Info, AlignLeft, Minimize2, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const JsonFormatter: React.FC = () => {
-  const [json, setJson] = usePersistedState('tp:json:content', '');
+  const [json, setJson] = usePersistedState('tp:json:content', '', true);
   const [error, setError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
 

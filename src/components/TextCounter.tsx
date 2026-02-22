@@ -6,7 +6,7 @@ import { Copy, Trash2, Clock, AlignLeft, Hash } from 'lucide-react';
 import Toast from './Toast';
 
 const TextCounter: React.FC = () => {
-  const [text, setText] = usePersistedState('tp:counter:text', '');
+  const [text, setText] = usePersistedState('tp:counter:text', '', true);
   const [showToast, setShowToast] = useState(false);
 
   const stats = useMemo(() => {
@@ -48,7 +48,7 @@ const TextCounter: React.FC = () => {
           </>
         }
       >
-        <div className="flex flex-col h-full min-h-[35rem] p-6 gap-6">
+        <div className="flex flex-col flex-1 p-6 gap-6 overflow-y-auto min-h-0">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

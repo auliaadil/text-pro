@@ -8,8 +8,8 @@ import { FileDiff, Columns, ArrowLeft, AlignJustify, Type, AlignLeft, Trash2 } f
 type DiffMode = 'lines' | 'words' | 'chars';
 
 const DiffViewer: React.FC = () => {
-  const [textA, setTextA] = usePersistedState('tp:diff:textA', '');
-  const [textB, setTextB] = usePersistedState('tp:diff:textB', '');
+  const [textA, setTextA] = usePersistedState('tp:diff:textA', '', true);
+  const [textB, setTextB] = usePersistedState('tp:diff:textB', '', true);
   const [showDiff, setShowDiff] = useState(false);
   const [mode, setMode] = usePersistedState<DiffMode>('tp:diff:mode', 'lines');
 
@@ -110,7 +110,7 @@ const DiffViewer: React.FC = () => {
       }
     >
       {!showDiff ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 min-h-[30rem]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 flex-1 min-h-0 overflow-y-auto">
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Original Text (A)</label>
             <textarea
@@ -131,7 +131,7 @@ const DiffViewer: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col h-full min-h-[35rem]">
+        <div className="flex flex-col flex-1 min-h-0">
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Legend */}
             <div className="flex items-center gap-6">

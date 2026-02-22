@@ -7,9 +7,9 @@ import { Sparkles, Send, Copy, Loader2, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const AiAssistant: React.FC = () => {
-  const [text, setText] = usePersistedState('tp:ai:text', '');
-  const [instruction, setInstruction] = usePersistedState('tp:ai:instruction', 'Summarize this text in 3 bullet points.');
-  const [result, setResult] = usePersistedState('tp:ai:result', '');
+  const [text, setText] = usePersistedState('tp:ai:text', '', true);
+  const [instruction, setInstruction] = usePersistedState('tp:ai:instruction', 'Summarize this text in 3 bullet points.', true);
+  const [result, setResult] = usePersistedState('tp:ai:result', '', true);
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
@@ -55,7 +55,7 @@ const AiAssistant: React.FC = () => {
           </button>
         }
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[45rem]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto">
           {/* Input Panel */}
           <div className="lg:col-span-7 p-6 space-y-4 border-r border-slate-100 dark:border-slate-800 flex flex-col">
             <div className="flex-1 space-y-4 flex flex-col">

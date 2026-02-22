@@ -71,7 +71,7 @@ const highlights = [
 const AboutPage: React.FC = () => {
     return (
         <ToolLayout description="Everything you need to know about TextPro Studio.">
-            <div className="p-6 lg:p-8 space-y-10">
+            <div className="p-6 lg:p-8 space-y-10 overflow-y-auto h-full">
                 {/* Hero */}
                 <div className="text-center space-y-4 py-6">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/40 mx-auto">

@@ -6,7 +6,7 @@ import { Copy, Minimize2, AlignLeft, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const HtmlFormatter: React.FC = () => {
-  const [input, setInput] = usePersistedState('tp:html:content', '');
+  const [input, setInput] = usePersistedState('tp:html:content', '', true);
   const [toast, setToast] = useState<{ msg: string, show: boolean }>({ msg: '', show: false });
 
   const showToast = (msg: string) => {

@@ -6,8 +6,8 @@ import { Copy, Wand2, ArrowRightLeft, ArrowDown, Trash2 } from 'lucide-react';
 import Toast from './Toast';
 
 const TextReformatter: React.FC = () => {
-  const [input, setInput] = usePersistedState('tp:reformatter:input', '');
-  const [output, setOutput] = usePersistedState('tp:reformatter:output', '');
+  const [input, setInput] = usePersistedState('tp:reformatter:input', '', true);
+  const [output, setOutput] = usePersistedState('tp:reformatter:output', '', true);
   const [showToast, setShowToast] = useState(false);
 
   const formatters = [
@@ -55,7 +55,7 @@ const TextReformatter: React.FC = () => {
           </>
         }
       >
-        <div className="flex flex-col lg:flex-row h-full min-h-[40rem] divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-y-auto divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
           <div className="flex-1 flex flex-col gap-4 p-6">
             <div className="flex-1 flex flex-col gap-2">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Original Text</label>

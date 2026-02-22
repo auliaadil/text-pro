@@ -5,7 +5,7 @@ import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 
 const MarkdownViewer: React.FC = () => {
-  const [md, setMd] = usePersistedState('tp:markdown:content', '# Hello World\n\nStart typing **markdown** here to see it rendered live.\n\n### Features\n- Live Preview\n- Side by side editing\n- Clean rendering');
+  const [md, setMd] = usePersistedState('tp:markdown:content', '# Hello World\n\nStart typing **markdown** here to see it rendered live.\n\n### Features\n- Live Preview\n- Side by side editing\n- Clean rendering', true);
   const [viewMode, setViewMode] = usePersistedState<'both' | 'edit' | 'preview'>('tp:markdown:viewMode', 'both');
 
   const renderMarkdown = (text: string) => {
@@ -63,7 +63,7 @@ const MarkdownViewer: React.FC = () => {
         </>
       }
     >
-      <div className={`flex h-[40rem] ${viewMode === 'both' ? 'divide-x divide-slate-100 dark:divide-slate-800' : ''}`}>
+      <div className={`flex flex-1 min-h-0 overflow-hidden ${viewMode === 'both' ? 'divide-x divide-slate-100 dark:divide-slate-800' : ''}`}>
         {(viewMode === 'edit' || viewMode === 'both') && (
           <div className="flex-1 p-6">
             <textarea

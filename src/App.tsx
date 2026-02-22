@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Moon,
   Sun,
-  Info
+  Info,
+  Database
 } from 'lucide-react';
 import { ToolType } from './types';
 import TextCounter from './components/TextCounter';
@@ -34,6 +35,7 @@ const App: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = usePersistedState('tp:sidebarCollapsed', false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = usePersistedState('tp:darkMode', false);
+  const [sessionSave, setSessionSave] = usePersistedState('tp:global:sessionSave', false);
 
   const [isScrollingAllowed, setIsScrollingAllowed] = useState(!isCollapsed);
 
@@ -215,6 +217,41 @@ const App: React.FC = () => {
             ) : (
               <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${isDarkMode ? 'bg-indigo-600' : 'bg-slate-200'}`}>
                 <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${isDarkMode ? 'left-6' : 'left-1'}`}></div>
+              </div>
+            )}
+          </div>
+          <div
+            className={`
+               flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 transition-colors
+               ${isCollapsed ? 'justify-center bg-transparent' : 'justify-between'}
+             `}
+            onClick={() => {
+              const newValue = !sessionSave;
+              setSessionSave(newValue);
+              if (!newValue) {
+                // If turning off, dispatch the custom event so usePersistedState hooks can clear storage
+                // We use a small timeout to allow React state to render the new toggle value first
+                setTimeout(() => window.dispatchEvent(new Event('tp-session-save-changed')), 0);
+              }
+            }}
+            role="button"
+            title="Local session storage"
+          >
+            <div className={`flex items-center gap-3 ${isCollapsed ? 'hidden' : 'flex'}`}>
+              <Database size={18} className={sessionSave ? "text-emerald-500" : "text-slate-400"} />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Save Session</span>
+                <span className="text-[10px] text-slate-400 leading-tight">Locally in browser</span>
+              </div>
+            </div>
+
+            {isCollapsed ? (
+              <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <Database size={20} className={sessionSave ? "text-emerald-500" : "text-slate-400"} />
+              </button>
+            ) : (
+              <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${sessionSave ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${sessionSave ? 'left-6' : 'left-1'}`}></div>
               </div>
             )}
           </div>

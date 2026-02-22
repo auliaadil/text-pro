@@ -67,8 +67,8 @@ const TextSplitter: React.FC = () => {
           </>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800">
-          <div className="p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 flex-1 min-h-0">
+          <div className="p-6 space-y-4 overflow-y-auto h-full">
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Input Text</label>
             <textarea
               value={text}
