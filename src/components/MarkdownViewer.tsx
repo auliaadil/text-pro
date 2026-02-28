@@ -11,75 +11,161 @@ const MarkdownViewer: React.FC = () => {
   const renderMarkdown = (text: string) => {
     // 1. Extract PRE blocks (Code blocks)
     const codeBlocks: string[] = [];
-    let processedText = text.replace(/```([a-z0-9]*)\n([\s\S]*?)```/gim, (match, _lang, code) => {
+    let processedText = text.replace(/```(.*?)\n([\s\S]*?)```/gim, (match, _lang, code) => {
       codeBlocks.push(code);
-      return `\n\n__CODE_BLOCK_${codeBlocks.length - 1}__\n\n`;
+      return `\n\n@@@CODE_BLOCK_${codeBlocks.length - 1}@@@\n\n`;
     });
 
     // 2. Extract Inline Code
     const inlineCodes: string[] = [];
     processedText = processedText.replace(/`([^`\n]+)`/gim, (match, code) => {
       inlineCodes.push(code);
-      return `__INLINE_CODE_${inlineCodes.length - 1}__`;
+      return `@@@INLINE_CODE_${inlineCodes.length - 1}@@@`;
     });
 
     // 3. Inline Formatting (bold, italic, links, images)
+
+    // Links and Images FIRST to protect their URLs
+    processedText = processedText
+      .replace(/!\[(.*?)\]\((.*?)(?:\s+"(.*?)")?\)/gim, (match, alt, url, title) => {
+        const titleAttr = title ? ` title='${title}'` : '';
+        return `<img alt='${alt}' src='${url}'${titleAttr} class='max-w-full rounded-lg my-3 shadow-sm' />`;
+      })
+      .replace(/\[(.*?)\]\((.*?)(?:\s+"(.*?)")?\)/gim, (match, text, url, title) => {
+        const titleAttr = title ? ` title='${title}'` : '';
+        return `<a href='${url}'${titleAttr} class='text-blue-600 dark:text-blue-400 hover:underline'>${text}</a>`;
+      });
+
+    // Emphases
     processedText = processedText
       .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+      .replace(/__(.*?)__/gim, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-      .replace(/!\[(.*?)\]\((.*?)\)/gim, "<img alt='$1' src='$2' class='max-w-full rounded-lg my-3 shadow-sm' />")
-      .replace(/\[(.*?)\]\((.*?)\)/gim, "<a href='$2' class='text-blue-600 dark:text-blue-400 hover:underline'>$1</a>");
+      .replace(/(^|\s)_([^_]+)_(?=$|\s|[.,?!])/gim, '$1<em>$2</em>');
 
-    // 4. Block-level processing (Headers, Lists, Blockquotes, Tables, Paragraphs)
+    // 4. Block-level processing
     const blocks = processedText.split(/\n\n+/);
     processedText = blocks.map(block => {
       const trimmed = block.trim();
       if (!trimmed) return '';
 
       // Is it a Code Block Placeholder?
-      if (trimmed.startsWith('__CODE_BLOCK_')) {
+      if (trimmed.startsWith('@@@CODE_BLOCK_')) {
         return trimmed;
       }
 
       // Is it a Heading?
-      if (trimmed.startsWith('# ')) return trimmed.replace(/^# (.*)/gm, '<h1 class="text-3xl font-bold mt-6 mb-4 text-slate-900 dark:text-white">$1</h1>');
-      if (trimmed.startsWith('## ')) return trimmed.replace(/^## (.*)/gm, '<h2 class="text-2xl font-bold mt-5 mb-3 text-slate-800 dark:text-slate-100">$1</h2>');
-      if (trimmed.startsWith('### ')) return trimmed.replace(/^### (.*)/gm, '<h3 class="text-xl font-bold mt-4 mb-2 text-slate-800 dark:text-slate-100">$1</h3>');
-
-      // Is it a Blockquote?
-      if (trimmed.startsWith('> ')) {
-        return trimmed.replace(/^> (.*)/gm, '<blockquote class="border-l-4 border-slate-300 dark:border-slate-600 pl-4 italic my-3 text-slate-600 dark:text-slate-400">$1</blockquote>');
+      if (/^#{1,6} /.test(trimmed)) {
+        return trimmed.replace(/^(#{1,6}) (.*)/gm, (match, hashes, content) => {
+          const level = hashes.length;
+          const sizes = ['text-3xl', 'text-2xl', 'text-xl', 'text-lg', 'text-base', 'text-sm'];
+          const margins = ['mt-6 mb-4', 'mt-5 mb-3', 'mt-4 mb-2', 'mt-3 mb-2', 'mt-2 mb-1', 'mt-2 mb-1'];
+          return `<h${level} class="${sizes[level - 1]} font-bold ${margins[level - 1]} text-slate-900 dark:text-white">${content}</h${level}>`;
+        });
       }
 
-      // Is it a List?
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        const listItems = trimmed.split('\n').map(line => line.replace(/^[-*]\s+(.*)/, '<li class="ml-5 list-disc my-1">$1</li>')).join('');
-        return `<ul class="my-3 text-slate-800 dark:text-slate-200">${listItems}</ul>`;
+      // Is it a Blockquote (handles basic nesting visual layout without recursive DOM)?
+      if (/^>/.test(trimmed)) {
+        let bqHtml = trimmed.split('\n').map(l => {
+          const match = l.match(/^(>+)\s?(.*)/);
+          if (match) {
+            const depth = match[1].length;
+            const content = match[2];
+            const padding = (depth - 1) * 16;
+            return `<div style="padding-left: ${padding}px; border-left: ${depth > 1 ? '4px solid #cbd5e1' : 'none'}; margin-left: ${depth > 1 ? '16px' : '0'}">${content}</div>`;
+          }
+          return l;
+        }).join('');
+        return `<blockquote class="border-l-4 border-slate-300 dark:border-slate-600 pl-4 py-1 italic my-3 text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/20 rounded-r-lg">${bqHtml}</blockquote>`;
+      }
+
+      // Is it a List? (Ordered or Unordered, with nesting)
+      if (/^(\s*)([-*+]|\d+\.)\s+/.test(trimmed)) {
+        const lines = block.split('\n'); // keep leading spaces
+        let html = '';
+        const stack: { type: 'ul' | 'ol', indent: number }[] = [];
+        let inLi = false;
+
+        lines.forEach(line => {
+          if (!line.trim()) return;
+          const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.*)/);
+          if (listMatch) {
+            const [, indentStr, marker, content] = listMatch;
+            const indent = indentStr.length;
+            const type = /^\d/.test(marker) ? 'ol' : 'ul';
+
+            while (stack.length > 0 && stack[stack.length - 1].indent > indent) {
+              if (inLi) { html += '</li>'; inLi = false; }
+              html += stack.pop()!.type === 'ol' ? '</ol>' : '</ul>';
+            }
+
+            if (stack.length === 0 || stack[stack.length - 1].indent < indent) {
+              stack.push({ type, indent });
+              const listClass = type === 'ol' ? 'list-decimal' : 'list-disc';
+              html += `<${type} class="pl-6 ${listClass} my-2 text-slate-800 dark:text-slate-200 space-y-1">`;
+            } else if (stack[stack.length - 1].type !== type) {
+              if (inLi) { html += '</li>'; inLi = false; }
+              html += stack.pop()!.type === 'ol' ? '</ol>' : '</ul>';
+              stack.push({ type, indent });
+              const listClass = type === 'ol' ? 'list-decimal' : 'list-disc';
+              html += `<${type} class="pl-6 ${listClass} my-2 text-slate-800 dark:text-slate-200 space-y-1">`;
+            } else {
+              if (inLi) { html += '</li>'; inLi = false; }
+            }
+
+            html += `<li class="pl-1">${content}`;
+            inLi = true;
+          } else {
+            // Continuation of previous list item
+            html += `<br />${line.trim()}`;
+          }
+        });
+
+        if (inLi) html += '</li>';
+        while (stack.length > 0) {
+          html += stack.pop()!.type === 'ol' ? '</ol>' : '</ul>';
+        }
+        return html;
       }
 
       // Is it a Table?
-      if (trimmed.startsWith('|') && trimmed.includes('|-')) {
+      if (trimmed.includes('|') && trimmed.match(/\|[-\s:]+\|/)) {
         const lines = trimmed.split('\n');
         let html = '<div class="overflow-x-auto my-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm"><table class="w-full text-left border-collapse text-sm">';
+
+        let alignments: string[] = [];
+
         lines.forEach((line, i) => {
-          if (line.includes('|-')) return;
-          const cells = line.split('|').filter((c, idx, arr) => {
-            if ((idx === 0 || idx === arr.length - 1) && c.trim() === '') return false;
-            return true;
-          });
+          let cells = line.split('|');
+          if (cells.length > 0 && cells[0].trim() === '') cells.shift();
+          if (cells.length > 0 && cells[cells.length - 1].trim() === '') cells.pop();
+
+          if (i === 1 && line.match(/\|[-\s:]+\|/)) {
+            alignments = cells.map(c => {
+              const cell = c.trim();
+              const left = cell.startsWith(':');
+              const right = cell.endsWith(':');
+              if (left && right) return 'text-center';
+              if (right) return 'text-right';
+              return 'text-left';
+            });
+            return;
+          }
 
           if (i === 0) {
             html += '<thead class="bg-slate-50 dark:bg-slate-900/80"><tr>';
             cells.forEach((cell, ci) => {
               const borderCls = ci === 0 ? '' : 'border-l border-slate-200 dark:border-slate-800';
-              html += `<th class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200 ${borderCls}">${cell.trim()}</th>`;
+              const alignCls = alignments[ci] || 'text-left';
+              html += `<th class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200 ${borderCls} ${alignCls}">${cell.trim()}</th>`;
             });
             html += '</tr></thead><tbody class="divide-y divide-slate-200 dark:divide-slate-800">';
           } else {
             html += `<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors bg-white dark:bg-slate-950">`;
             cells.forEach((cell, ci) => {
               const borderCls = ci === 0 ? '' : 'border-l border-slate-200 dark:border-slate-800';
-              html += `<td class="px-4 py-3 text-slate-700 dark:text-slate-300 ${borderCls} leading-relaxed">${cell.trim()}</td>`;
+              const alignCls = alignments[ci] || 'text-left';
+              html += `<td class="px-4 py-3 text-slate-700 dark:text-slate-300 ${borderCls} ${alignCls} leading-relaxed">${cell.trim()}</td>`;
             });
             html += '</tr>';
           }
@@ -93,13 +179,13 @@ const MarkdownViewer: React.FC = () => {
     }).join('\n');
 
     // 5. Restore Inline Code
-    processedText = processedText.replace(/__INLINE_CODE_(\d+)__/g, (match, index) => {
+    processedText = processedText.replace(/@@@INLINE_CODE_(\d+)@@@/g, (match, index) => {
       const escaped = inlineCodes[Number(index)].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       return `<code class="bg-slate-100 dark:bg-slate-800 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono border border-slate-200 dark:border-slate-700 shadow-sm">${escaped}</code>`;
     });
 
     // 6. Restore Code Blocks with syntax highlight heuristics
-    processedText = processedText.replace(/__CODE_BLOCK_(\d+)__/g, (match, index) => {
+    processedText = processedText.replace(/@@@CODE_BLOCK_(\d+)@@@/g, (match, index) => {
       const code = codeBlocks[Number(index)] || '';
       const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
