@@ -1,20 +1,30 @@
 import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 
 /**
- * A drop-in replacement for useState that persists the value to localStorage.
- * Falls back to standard in-memory state if localStorage is unavailable or if Session Save is disabled for 'content' fields.
+ * A drop-in replacement for useState that persists the value.
+ * Configs persist to localStorage always.
+ * Content persists to localStorage if 'Save Session' is enabled.
+ * If 'Save Session' is disabled, content persists only to sessionStorage (lives until tab is closed)
+ * so that users don't lose data when switching tools within the same session.
  */
 export function usePersistedState<T>(key: string, defaultValue: T, isContent: boolean = false): [T, Dispatch<SetStateAction<T>>] {
     const [state, setState] = useState<T>(() => {
         try {
             const isSaveEnabled = localStorage.getItem('tp:global:sessionSave') === 'true';
-            if (isContent && !isSaveEnabled) {
-                return defaultValue;
-            }
 
-            const stored = localStorage.getItem(key);
-            if (stored !== null) {
-                return JSON.parse(stored);
+            if (isContent) {
+                // If global save is enabled, try loading from localStorage first
+                if (isSaveEnabled) {
+                    const localStored = localStorage.getItem(key);
+                    if (localStored !== null) return JSON.parse(localStored);
+                }
+                // Then try sessionStorage (used when Save Session is off, or as a fallback)
+                const sessionStored = sessionStorage.getItem(key);
+                if (sessionStored !== null) return JSON.parse(sessionStored);
+            } else {
+                // Core configurations always load from localStorage
+                const stored = localStorage.getItem(key);
+                if (stored !== null) return JSON.parse(stored);
             }
         } catch {
             // ignore parse errors
@@ -24,11 +34,19 @@ export function usePersistedState<T>(key: string, defaultValue: T, isContent: bo
 
     useEffect(() => {
         try {
-            const isSaveEnabled = localStorage.getItem('tp:global:sessionSave') === 'true';
-            if (isContent && !isSaveEnabled) {
-                // If saving is disabled and this is content, remove it from storage but keep it in React state
-                localStorage.removeItem(key);
+            if (isContent) {
+                const isSaveEnabled = localStorage.getItem('tp:global:sessionSave') === 'true';
+
+                // ALWAYS save content to sessionStorage to prevent loss across tool-switches in same tab
+                sessionStorage.setItem(key, JSON.stringify(state));
+
+                if (isSaveEnabled) {
+                    localStorage.setItem(key, JSON.stringify(state));
+                } else {
+                    localStorage.removeItem(key);
+                }
             } else {
+                // Non-content always saves to localStorage
                 localStorage.setItem(key, JSON.stringify(state));
             }
         } catch {
@@ -43,15 +61,18 @@ export function usePersistedState<T>(key: string, defaultValue: T, isContent: bo
         const handleClearContent = () => {
             const isSaveEnabled = localStorage.getItem('tp:global:sessionSave') === 'true';
             if (!isSaveEnabled) {
+                // Remove from permanent storage
                 localStorage.removeItem(key);
-                // We do NOT reset the react state, so the user's active session isn't wiped out mid-typing.
-                // It just stops syncing to storage.
+                // We keep it in sessionStorage so they don't lose current work if they switch tools right after disabling
+            } else {
+                // If they turned it ON, immediately sync current state to localStorage
+                localStorage.setItem(key, JSON.stringify(state));
             }
         };
 
         window.addEventListener('tp-session-save-changed', handleClearContent);
         return () => window.removeEventListener('tp-session-save-changed', handleClearContent);
-    }, [key, isContent]);
+    }, [key, isContent, state]);
 
     return [state, setState];
 }
