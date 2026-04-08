@@ -29,6 +29,7 @@ import HtmlFormatter from './components/HtmlFormatter';
 import MarkdownViewer from './components/MarkdownViewer';
 import AiAssistant from './components/AiAssistant';
 import AboutPage from './components/AboutPage';
+import { Analytics } from '@vercel/analytics/react';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = usePersistedState<ToolType>('tp:activeTool', ToolType.COUNTER);
@@ -121,12 +122,12 @@ const App: React.FC = () => {
         {/* Sidebar Header */}
         <div className={`
           flex items-center h-20 px-4 transition-all duration-300 border-b border-transparent
-          ${isCollapsed ? 'justify-center' : 'justify-start gap-3'}
+          ${isCollapsed ? 'justify-start gap-3 lg:justify-center' : 'justify-start gap-3'}
         `}>
           <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/40">
             <span className="font-bold text-lg">TP</span>
           </div>
-          <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+          <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-auto opacity-100 lg:w-0 lg:opacity-0' : 'w-auto opacity-100'}`}>
             <span className="font-bold text-slate-800 dark:text-white whitespace-nowrap">TextPro</span>
             <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider whitespace-nowrap">Text Suite</span>
           </div>
@@ -148,7 +149,7 @@ const App: React.FC = () => {
                 ${activeTool === tool.id
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}
-                ${isCollapsed ? 'justify-center' : ''}
+                ${isCollapsed ? 'lg:justify-center' : ''}
               `}
             >
               <div className="flex-shrink-0 relative">
@@ -158,13 +159,13 @@ const App: React.FC = () => {
                 )}
               </div>
 
-              <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'hidden w-0' : 'block'}`}>
+              <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'block lg:hidden lg:w-0' : 'block'}`}>
                 {tool.name}
               </span>
 
               {/* Tooltip for collapsed mode */}
               {isCollapsed && (
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+                <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
                   {tool.name}
                 </div>
               )}
@@ -184,15 +185,15 @@ const App: React.FC = () => {
               ${activeTool === ToolType.ABOUT
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}
-              ${isCollapsed ? 'justify-center' : ''}
+              ${isCollapsed ? 'lg:justify-center' : ''}
             `}
           >
             <Info size={20} />
-            <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'hidden w-0' : 'block'}`}>
+            <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'block lg:hidden lg:w-0' : 'block'}`}>
               About
             </span>
             {isCollapsed && (
-              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+              <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
                 About
               </div>
             )}
@@ -200,30 +201,27 @@ const App: React.FC = () => {
           <div
             className={`
                flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 transition-colors
-               ${isCollapsed ? 'justify-center bg-transparent' : 'justify-between'}
+               ${isCollapsed ? 'justify-between lg:justify-center lg:bg-transparent' : 'justify-between'}
              `}
             onClick={() => setIsDarkMode(!isDarkMode)}
             role="button"
           >
-            <div className={`flex items-center gap-3 ${isCollapsed ? 'hidden' : 'flex'}`}>
+            <div className={`items-center gap-3 ${isCollapsed ? 'flex lg:hidden' : 'flex'}`}>
               {isDarkMode ? <Moon size={18} className="text-indigo-400" /> : <Sun size={18} className="text-orange-500" />}
               <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Dark Mode</span>
             </div>
 
-            {isCollapsed ? (
-              <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                {isDarkMode ? <Moon size={20} className="text-indigo-400" /> : <Sun size={20} />}
-              </button>
-            ) : (
-              <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${isDarkMode ? 'bg-indigo-600' : 'bg-slate-200'}`}>
-                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${isDarkMode ? 'left-6' : 'left-1'}`}></div>
-              </div>
-            )}
+            <button className={`${isCollapsed ? 'hidden lg:block' : 'hidden'} text-slate-400 hover:text-slate-600 dark:hover:text-slate-200`}>
+              {isDarkMode ? <Moon size={20} className="text-indigo-400" /> : <Sun size={20} />}
+            </button>
+            <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${isDarkMode ? 'bg-indigo-600' : 'bg-slate-200'} ${isCollapsed ? 'block lg:hidden' : 'block'}`}>
+              <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${isDarkMode ? 'left-6' : 'left-1'}`}></div>
+            </div>
           </div>
           <div
             className={`
                flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 transition-colors
-               ${isCollapsed ? 'justify-center bg-transparent' : 'justify-between'}
+               ${isCollapsed ? 'justify-between lg:justify-center lg:bg-transparent' : 'justify-between'}
              `}
             onClick={() => {
               const newValue = !sessionSave;
@@ -237,7 +235,7 @@ const App: React.FC = () => {
             role="button"
             title="Local session storage"
           >
-            <div className={`flex items-center gap-3 ${isCollapsed ? 'hidden' : 'flex'}`}>
+            <div className={`items-center gap-3 ${isCollapsed ? 'flex lg:hidden' : 'flex'}`}>
               <Database size={18} className={sessionSave ? "text-emerald-500" : "text-slate-400"} />
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Save Session</span>
@@ -245,15 +243,12 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {isCollapsed ? (
-              <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <Database size={20} className={sessionSave ? "text-emerald-500" : "text-slate-400"} />
-              </button>
-            ) : (
-              <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${sessionSave ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${sessionSave ? 'left-6' : 'left-1'}`}></div>
-              </div>
-            )}
+            <button className={`${isCollapsed ? 'hidden lg:block' : 'hidden'} text-slate-400 hover:text-slate-600 dark:hover:text-slate-200`}>
+              <Database size={20} className={sessionSave ? "text-emerald-500" : "text-slate-400"} />
+            </button>
+            <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${sessionSave ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'} ${isCollapsed ? 'block lg:hidden' : 'block'}`}>
+              <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${sessionSave ? 'left-6' : 'left-1'}`}></div>
+            </div>
           </div>
         </div>
       </aside>
@@ -285,6 +280,7 @@ const App: React.FC = () => {
           </div>
         </section>
       </main>
+      <Analytics />
     </div>
   );
 };

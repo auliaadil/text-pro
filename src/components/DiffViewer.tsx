@@ -28,6 +28,16 @@ const DiffViewer: React.FC = () => {
   }, [textA, textB, showDiff, mode]);
 
   const renderContent = () => {
+    if (textA === textB && textA) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 text-center">
+          <FileDiff size={48} className="mx-auto opacity-20 text-slate-400 mb-4" />
+          <h3 className="text-lg font-medium text-slate-600 dark:text-slate-300">Text is identical</h3>
+          <p className="text-sm text-slate-400 mt-1">No differences were found between the original and new text.</p>
+        </div>
+      );
+    }
+
     if (mode === 'lines') {
       let lineIndex = 1;
       return (

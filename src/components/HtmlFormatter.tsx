@@ -70,7 +70,7 @@ const HtmlFormatter: React.FC = () => {
       <ToolLayout
         description="Format (beautify) HTML to view the tag structure clearly, or minify it to save space."
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={beautify}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
