@@ -259,12 +259,25 @@ const MarkdownViewer: React.FC = () => {
       const code = codeBlocks[Number(index)] || '';
       const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-      const highlighted = escaped
-        .replace(/(\/\/[^\n]*)/g, '<span class="text-slate-500 dark:text-slate-500 italic">$1</span>') // comments
-        .replace(/(['"].*?['"])/g, '<span class="text-emerald-600 dark:text-emerald-400">$1</span>') // strings
-        .replace(/\b(class|final|String|List|Map|Color|Brightness|const|var|let|function|return|import|export|if|else|for|while|await|async|void|int|double|bool|dynamic|null|true|false)\b/g, '<span class="text-indigo-600 dark:text-indigo-400 font-semibold">$1</span>')
-        .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span class="text-amber-600 dark:text-amber-400">$1</span>') // Types/Classes
-        .replace(/(\b[a-zA-Z0-9_]+\s*)(?=\()/g, '<span class="text-blue-600 dark:text-blue-400">$1</span>'); // function calls
+      let tokenIndex = 0;
+      const tokens: string[] = [];
+      const saveToken = (cls: string, content: string) => {
+        const id = `@@tok${tokenIndex}@@`;
+        tokens.push(`<span class="${cls}">${content}</span>`);
+        tokenIndex++;
+        return id;
+      };
+
+      let highlighted = escaped
+        .replace(/(\/\/[^\n]*)/g, (_, p1) => saveToken('text-slate-500 dark:text-slate-500 italic', p1)) // comments
+        .replace(/(['"].*?['"])/g, (_, p1) => saveToken('text-emerald-600 dark:text-emerald-400', p1)) // strings
+        .replace(/\b(class|final|String|List|Map|Color|Brightness|const|var|let|function|return|import|export|if|else|for|while|await|async|void|int|double|bool|dynamic|null|true|false)\b/g, (_, p1) => saveToken('text-indigo-600 dark:text-indigo-400 font-semibold', p1))
+        .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, (_, p1) => saveToken('text-amber-600 dark:text-amber-400', p1)) // Types/Classes
+        .replace(/(\b[a-zA-Z0-9_]+\s*)(?=\()/g, (_, p1) => saveToken('text-blue-600 dark:text-blue-400', p1)); // function calls
+
+      tokens.forEach((val, i) => {
+        highlighted = highlighted.replace(`@@tok${i}@@`, val);
+      });
 
       return `<div class="my-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shadow-inner overflow-hidden font-mono text-sm leading-relaxed"><div class="px-5 py-4 overflow-x-auto"><pre><code>${highlighted}</code></pre></div></div>`;
     });
