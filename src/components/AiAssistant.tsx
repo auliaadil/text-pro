@@ -25,16 +25,7 @@ const AiAssistant: React.FC = () => {
 
   const handleProcess = async () => {
     if (!text.trim() || !instruction.trim()) return;
-    setLoading(true);
-    try {
-      const gemini = GeminiService.getInstance();
-      const output = await gemini.processSmartText(text, instruction);
-      setResult(output);
-    } catch (err) {
-      setResult("Error processing with Gemini. Please check your API configuration.");
-    } finally {
-      setLoading(false);
-    }
+    setResult("This feature is still in development. Please check back later!");
   };
 
   const handleCopy = () => {
