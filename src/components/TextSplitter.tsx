@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
-import { Scissors, Copy, ChevronDown, Trash2 } from 'lucide-react';
+import { Scissors, Copy, Trash2, Hash, AlignLeft, Target } from 'lucide-react';
 import Toast from './Toast';
 
 const TextSplitter: React.FC = () => {
@@ -12,6 +12,48 @@ const TextSplitter: React.FC = () => {
   const [charLimit, setCharLimit] = usePersistedState('tp:splitter:charLimit', '');
   const [results, setResults] = useState<string[]>([]);
   const [showToast, setShowToast] = useState(false);
+
+  const [debouncedCustomDelimiter, setDebouncedCustomDelimiter] = useState(customDelimiter);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCustomDelimiter(customDelimiter);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [customDelimiter]);
+
+  const stats = useMemo(() => {
+    const trimmed = text.trim();
+    const words = trimmed === '' ? 0 : trimmed.split(/\s+/).length;
+    const chars = text.length;
+    const paragraphs = trimmed === '' ? 0 : trimmed.split(/\n\s*\n/).length;
+
+    let occurrences = 0;
+    let activeDelimiter = '';
+    
+    if (delimiter === 'char_limit') {
+       const limit = parseInt(charLimit);
+       if (!isNaN(limit) && limit > 0 && text.length > 0) {
+         occurrences = Math.ceil(text.length / limit);
+       }
+    } else {
+      activeDelimiter = delimiter === 'custom' ? debouncedCustomDelimiter : delimiter;
+      if (activeDelimiter && text) {
+        // Count non-overlapping occurrences by splitting
+        occurrences = text.split(activeDelimiter).length - 1;
+      }
+    }
+
+    let delimiterLabel = 'Occurrences';
+    if (delimiter === 'char_limit') delimiterLabel = 'Est. Chunks';
+    else if (delimiter === '\n') delimiterLabel = 'New Lines';
+    else if (delimiter === ' ') delimiterLabel = 'Spaces';
+    else if (delimiter === ',') delimiterLabel = 'Commas';
+    else if (delimiter === '|') delimiterLabel = 'Pipes';
+    else if (delimiter === 'custom') delimiterLabel = 'Custom Match';
+
+    return { words, chars, paragraphs, occurrences, delimiterLabel };
+  }, [text, delimiter, debouncedCustomDelimiter, charLimit]);
 
   const splitModes = [
     { label: 'New Line', value: '\n' },
@@ -68,14 +110,23 @@ const TextSplitter: React.FC = () => {
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 flex-1 min-h-0">
-          <div className="p-6 space-y-4 overflow-y-auto h-full">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Input Text</label>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="w-full h-80 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none"
-              placeholder="Enter text to split..."
-            />
+          <div className="p-6 flex flex-col space-y-4 overflow-y-auto h-full">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
+              <StatBox icon={<Hash size={14} />} label="Characters" value={stats.chars} />
+              <StatBox icon={<AlignLeft size={14} />} label="Words" value={stats.words} />
+              <StatBox icon={<Hash size={14} />} label="Paragraphs" value={stats.paragraphs} />
+              <StatBox icon={<Target size={14} />} label={stats.delimiterLabel} value={stats.occurrences} />
+            </div>
+            
+            <div className="space-y-4 flex-1 flex flex-col min-h-[20rem]">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Input Text</label>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="w-full flex-1 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none"
+                placeholder="Enter text to split..."
+              />
+            </div>
             <div className="space-y-2">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Split By</label>
               <div className="flex flex-wrap gap-2">
@@ -153,5 +204,15 @@ const TextSplitter: React.FC = () => {
     </>
   );
 };
+
+const StatBox: React.FC<{ icon: React.ReactNode, label: string, value: string | number }> = ({ icon, label, value }) => (
+  <div className="p-3 flex flex-col items-center justify-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-blue-300 dark:hover:border-blue-700 transition-colors shadow-sm">
+    <div className="flex items-center gap-1.5 text-slate-400 truncate max-w-full px-2">
+      {icon}
+      <span className="text-[10px] font-bold uppercase tracking-wider truncate">{label}</span>
+    </div>
+    <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{value}</span>
+  </div>
+);
 
 export default TextSplitter;
