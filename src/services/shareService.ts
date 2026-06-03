@@ -2,7 +2,6 @@ import LZString from 'lz-string';
 import { ToolType, SharePayload, ShareResult } from '../types';
 
 const HASH_PREFIX = 'share=';
-const MAX_URL_LENGTH = 8000;
 
 export function encode(tool: ToolType, state: Record<string, string>): string {
   const payload: SharePayload = { tool, state };
