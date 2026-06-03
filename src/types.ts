@@ -25,3 +25,13 @@ export interface DiffPart {
   added?: boolean;
   removed?: boolean;
 }
+
+export interface SharePayload {
+  tool: ToolType;
+  state: Record<string, string>;
+}
+
+export type ShareResult =
+  | { type: 'none' }
+  | { type: 'payload'; data: SharePayload }
+  | { type: 'error'; reason: 'corrupt' | 'unknown-tool' };
