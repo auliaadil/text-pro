@@ -8,6 +8,43 @@ import { ToolType } from '../types';
 
 type DiffMode = 'lines' | 'words' | 'chars';
 
+type ViewLayout = 'unified' | 'split';
+
+type SplitRow = {
+  left:  { text: string; lineNum: number } | null;
+  right: { text: string; lineNum: number } | null;
+};
+
+function buildSplitRows(diffResult: Diff.Change[]): SplitRow[] {
+  const rows: SplitRow[] = [];
+  let leftNum = 1;
+  let rightNum = 1;
+
+  for (const part of diffResult) {
+    const lines = part.value.split('\n');
+    if (lines[lines.length - 1] === '') lines.pop();
+
+    if (part.removed) {
+      for (const text of lines) {
+        rows.push({ left: { text, lineNum: leftNum++ }, right: null });
+      }
+    } else if (part.added) {
+      for (const text of lines) {
+        rows.push({ left: null, right: { text, lineNum: rightNum++ } });
+      }
+    } else {
+      for (const text of lines) {
+        rows.push({
+          left:  { text, lineNum: leftNum++ },
+          right: { text, lineNum: rightNum++ },
+        });
+      }
+    }
+  }
+
+  return rows;
+}
+
 interface DiffViewerProps {
   initialState?: Record<string, string>;
 }
