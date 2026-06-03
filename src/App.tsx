@@ -30,6 +30,8 @@ import MarkdownViewer from './components/MarkdownViewer';
 import AiAssistant from './components/AiAssistant';
 import AboutPage from './components/AboutPage';
 import { Analytics } from '@vercel/analytics/react';
+import { parseShareHash } from './services/shareService';
+import ShareErrorDialog from './components/ShareErrorDialog';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = usePersistedState<ToolType>('tp:activeTool', ToolType.COUNTER);
@@ -39,6 +41,8 @@ const App: React.FC = () => {
   const [sessionSave, setSessionSave] = usePersistedState('tp:global:sessionSave', false);
 
   const [isScrollingAllowed, setIsScrollingAllowed] = useState(!isCollapsed);
+  const [shareInitialState, setShareInitialState] = useState<Record<string, string> | undefined>(undefined);
+  const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -69,6 +73,20 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    const result = parseShareHash();
+    if (result.type === 'payload') {
+      setActiveTool(result.data.tool);
+      setShareInitialState(result.data.state);
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else if (result.type === 'error') {
+      const message = result.reason === 'unknown-tool'
+        ? "This share link references a tool that doesn't exist. The app has loaded normally."
+        : 'This share link appears to be broken or incomplete. The app has loaded normally.';
+      setShareErrorMessage(message);
+    }
+  }, []);
+
   const tools = [
     { id: ToolType.COUNTER, name: 'Text Counter', icon: <Hash size={20} /> },
     { id: ToolType.SPLITTER, name: 'Text Splitter', icon: <Scissors size={20} /> },
@@ -82,16 +100,16 @@ const App: React.FC = () => {
 
   const renderTool = () => {
     switch (activeTool) {
-      case ToolType.COUNTER: return <TextCounter />;
-      case ToolType.SPLITTER: return <TextSplitter />;
-      case ToolType.REFORMATTER: return <TextReformatter />;
-      case ToolType.DIFF: return <DiffViewer />;
-      case ToolType.JSON: return <JsonFormatter />;
-      case ToolType.HTML: return <HtmlFormatter />;
-      case ToolType.MARKDOWN: return <MarkdownViewer />;
-      case ToolType.AI_ASSISTANT: return <AiAssistant />;
-      case ToolType.ABOUT: return <AboutPage />;
-      default: return <TextCounter />;
+      case ToolType.COUNTER:      return <TextCounter initialState={shareInitialState} />;
+      case ToolType.SPLITTER:     return <TextSplitter initialState={shareInitialState} />;
+      case ToolType.REFORMATTER:  return <TextReformatter initialState={shareInitialState} />;
+      case ToolType.DIFF:         return <DiffViewer initialState={shareInitialState} />;
+      case ToolType.JSON:         return <JsonFormatter initialState={shareInitialState} />;
+      case ToolType.HTML:         return <HtmlFormatter initialState={shareInitialState} />;
+      case ToolType.MARKDOWN:     return <MarkdownViewer initialState={shareInitialState} />;
+      case ToolType.AI_ASSISTANT: return <AiAssistant initialState={shareInitialState} />;
+      case ToolType.ABOUT:        return <AboutPage />;
+      default:                    return <TextCounter />;
     }
   };
 
@@ -287,6 +305,12 @@ const App: React.FC = () => {
           </div>
         </section>
       </main>
+      {shareErrorMessage && (
+        <ShareErrorDialog
+          message={shareErrorMessage}
+          onClose={() => setShareErrorMessage(null)}
+        />
+      )}
       <Analytics />
     </div>
   );
