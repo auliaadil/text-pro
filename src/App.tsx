@@ -250,6 +250,13 @@ const App: React.FC = () => {
               <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${sessionSave ? 'left-6' : 'left-1'}`}></div>
             </div>
           </div>
+          {!isCollapsed && (
+            <div className="px-3 pb-1">
+              <span className="text-[10px] text-slate-400">
+                {import.meta.env.VITE_APP_VERSION ?? 'dev'}
+              </span>
+            </div>
+          )}
         </div>
       </aside>
 
