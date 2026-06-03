@@ -4,6 +4,7 @@ import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Copy, Info, AlignLeft, Minimize2, Trash2, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import Toast from './Toast';
+import { ToolType } from '../types';
 
 // --- Utilities ---
 
@@ -277,8 +278,16 @@ function formatBytes(bytes: number): string {
 
 // --- Component ---
 
-const JsonFormatter: React.FC = () => {
+interface JsonFormatterProps {
+  initialState?: Record<string, string>;
+}
+
+const JsonFormatter: React.FC<JsonFormatterProps> = ({ initialState }) => {
   const [json, setJson] = usePersistedState('tp:json:content', '', true);
+
+  useEffect(() => {
+    if (initialState?.input !== undefined) setJson(initialState.input);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [errorLine, setErrorLine] = useState<number | null>(null);
   const [showToast, setShowToast] = useState(false);
@@ -452,6 +461,8 @@ const JsonFormatter: React.FC = () => {
     <>
       <ToolLayout
         description="Format, validate, and minify JSON with syntax highlighting, bracket matching, and error detection."
+        shareToolType={ToolType.JSON}
+        shareState={{ input: json }}
         actions={
           <div className="flex gap-2 flex-wrap">
             <button

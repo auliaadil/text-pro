@@ -1,12 +1,21 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Copy, Trash2, Clock, AlignLeft, Hash } from 'lucide-react';
 import Toast from './Toast';
+import { ToolType } from '../types';
 
-const TextCounter: React.FC = () => {
+interface TextCounterProps {
+  initialState?: Record<string, string>;
+}
+
+const TextCounter: React.FC<TextCounterProps> = ({ initialState }) => {
   const [text, setText] = usePersistedState('tp:counter:text', '', true);
+
+  useEffect(() => {
+    if (initialState?.text !== undefined) setText(initialState.text);
+  }, []);
   const [showToast, setShowToast] = useState(false);
 
   const stats = useMemo(() => {
@@ -30,6 +39,8 @@ const TextCounter: React.FC = () => {
     <>
       <ToolLayout
         description="Calculate real-time statistics for your text including word count, character count, and estimated reading time."
+        shareToolType={ToolType.COUNTER}
+        shareState={{ text }}
         actions={
           <>
             <button

@@ -1,15 +1,25 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import * as Diff from 'diff';
 import ToolLayout from './ToolLayout';
 import { FileDiff, Columns, ArrowLeft, AlignJustify, Type, AlignLeft, Trash2 } from 'lucide-react';
+import { ToolType } from '../types';
 
 type DiffMode = 'lines' | 'words' | 'chars';
 
-const DiffViewer: React.FC = () => {
+interface DiffViewerProps {
+  initialState?: Record<string, string>;
+}
+
+const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
   const [textA, setTextA] = usePersistedState('tp:diff:textA', '', true);
   const [textB, setTextB] = usePersistedState('tp:diff:textB', '', true);
+
+  useEffect(() => {
+    if (initialState?.left !== undefined) setTextA(initialState.left);
+    if (initialState?.right !== undefined) setTextB(initialState.right);
+  }, []);
   const [showDiff, setShowDiff] = useState(false);
   const [mode, setMode] = usePersistedState<DiffMode>('tp:diff:mode', 'lines');
 
@@ -92,6 +102,8 @@ const DiffViewer: React.FC = () => {
   return (
     <ToolLayout
       description="Compare two text sources to identify additions, removals, and changes with varying levels of granularity."
+      shareToolType={ToolType.DIFF}
+      shareState={{ left: textA, right: textB }}
       actions={
         showDiff ? (
           <button

@@ -1,12 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Copy, Minimize2, AlignLeft, Trash2 } from 'lucide-react';
 import Toast from './Toast';
+import { ToolType } from '../types';
 
-const HtmlFormatter: React.FC = () => {
+interface HtmlFormatterProps {
+  initialState?: Record<string, string>;
+}
+
+const HtmlFormatter: React.FC<HtmlFormatterProps> = ({ initialState }) => {
   const [input, setInput] = usePersistedState('tp:html:content', '', true);
+
+  useEffect(() => {
+    if (initialState?.input !== undefined) setInput(initialState.input);
+  }, []);
   const [toast, setToast] = useState<{ msg: string, show: boolean }>({ msg: '', show: false });
 
   const showToast = (msg: string) => {
@@ -69,6 +78,8 @@ const HtmlFormatter: React.FC = () => {
     <>
       <ToolLayout
         description="Format (beautify) HTML to view the tag structure clearly, or minify it to save space."
+        shareToolType={ToolType.HTML}
+        shareState={{ input }}
         actions={
           <div className="flex gap-2 flex-wrap">
             <button

@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trash2, Printer } from 'lucide-react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
+import { ToolType } from '../types';
 
 const DEFAULT_MARKDOWN = `# Markdown syntax guide
 
@@ -74,8 +75,16 @@ alert(message);
 
 This web site is using \`Custom Markdown Parser\`.`;
 
-const MarkdownViewer: React.FC = () => {
+interface MarkdownViewerProps {
+  initialState?: Record<string, string>;
+}
+
+const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ initialState }) => {
   const [md, setMd] = usePersistedState('tp:markdown:content', DEFAULT_MARKDOWN, true);
+
+  useEffect(() => {
+    if (initialState?.content !== undefined) setMd(initialState.content);
+  }, []);
   const [viewMode, setViewMode] = usePersistedState<'both' | 'edit' | 'preview'>('tp:markdown:viewMode', 'both');
 
   const renderMarkdown = (text: string) => {
@@ -332,6 +341,8 @@ const MarkdownViewer: React.FC = () => {
   return (
     <ToolLayout
       description="Write and preview GitHub-flavored markdown in a side-by-side view."
+      shareToolType={ToolType.MARKDOWN}
+      shareState={{ content: md }}
       actions={
         <>
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">

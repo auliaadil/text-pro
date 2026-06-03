@@ -4,9 +4,18 @@ import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Scissors, Copy, Trash2, Hash, AlignLeft, Target } from 'lucide-react';
 import Toast from './Toast';
+import { ToolType } from '../types';
 
-const TextSplitter: React.FC = () => {
+interface TextSplitterProps {
+  initialState?: Record<string, string>;
+}
+
+const TextSplitter: React.FC<TextSplitterProps> = ({ initialState }) => {
   const [text, setText] = usePersistedState('tp:splitter:text', '');
+
+  useEffect(() => {
+    if (initialState?.text !== undefined) setText(initialState.text);
+  }, []);
   const [delimiter, setDelimiter] = usePersistedState('tp:splitter:delimiter', '\n');
   const [customDelimiter, setCustomDelimiter] = usePersistedState('tp:splitter:customDelimiter', '');
   const [charLimit, setCharLimit] = usePersistedState('tp:splitter:charLimit', '');
@@ -92,6 +101,8 @@ const TextSplitter: React.FC = () => {
     <>
       <ToolLayout
         description="Split large text blocks into smaller parts using custom delimiters."
+        shareToolType={ToolType.SPLITTER}
+        shareState={{ text }}
         actions={
           <>
             <button

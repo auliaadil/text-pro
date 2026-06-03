@@ -1,14 +1,24 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { GeminiService } from '../services/geminiService';
 import { Sparkles, Send, Copy, Loader2, Trash2 } from 'lucide-react';
 import Toast from './Toast';
+import { ToolType } from '../types';
 
-const AiAssistant: React.FC = () => {
+interface AiAssistantProps {
+  initialState?: Record<string, string>;
+}
+
+const AiAssistant: React.FC<AiAssistantProps> = ({ initialState }) => {
   const [text, setText] = usePersistedState('tp:ai:text', '', true);
   const [instruction, setInstruction] = usePersistedState('tp:ai:instruction', 'Summarize this text in 3 bullet points.', true);
+
+  useEffect(() => {
+    if (initialState?.text !== undefined) setText(initialState.text);
+    if (initialState?.instruction !== undefined) setInstruction(initialState.instruction);
+  }, []);
   const [result, setResult] = usePersistedState('tp:ai:result', '', true);
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -37,6 +47,8 @@ const AiAssistant: React.FC = () => {
     <>
       <ToolLayout
         description="Leverage the power of Gemini AI to perform complex text transformations, translations, and analysis."
+        shareToolType={ToolType.AI_ASSISTANT}
+        shareState={{ text, instruction }}
         actions={
           <button
             onClick={() => { setText(''); setInstruction('Summarize this text in 3 bullet points.'); setResult(''); }}

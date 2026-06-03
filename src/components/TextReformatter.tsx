@@ -1,12 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
 import { Copy, Wand2, ArrowRightLeft, ArrowDown, Trash2 } from 'lucide-react';
 import Toast from './Toast';
+import { ToolType } from '../types';
 
-const TextReformatter: React.FC = () => {
+interface TextReformatterProps {
+  initialState?: Record<string, string>;
+}
+
+const TextReformatter: React.FC<TextReformatterProps> = ({ initialState }) => {
   const [input, setInput] = usePersistedState('tp:reformatter:input', '', true);
+
+  useEffect(() => {
+    if (initialState?.input !== undefined) setInput(initialState.input);
+  }, []);
   const [output, setOutput] = usePersistedState('tp:reformatter:output', '', true);
   const [showToast, setShowToast] = useState(false);
 
@@ -37,6 +46,8 @@ const TextReformatter: React.FC = () => {
     <>
       <ToolLayout
         description="Instantly change the format of your text with standard conventions and cleaning utilities."
+        shareToolType={ToolType.REFORMATTER}
+        shareState={{ input }}
         actions={
           <>
             <button
