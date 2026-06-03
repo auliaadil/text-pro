@@ -23,12 +23,16 @@ export function parseShareHash(): ShareResult {
   const compressed = hash.slice(HASH_PREFIX.length + 1); // +1 for '#'
   try {
     const json = LZString.decompressFromEncodedURIComponent(compressed);
-    if (!json) return { type: 'error', reason: 'corrupt' };
+    if (json === null) return { type: 'error', reason: 'corrupt' };
 
     const parsed = JSON.parse(json) as SharePayload;
 
     if (!parsed.tool || !Object.values(ToolType).includes(parsed.tool)) {
       return { type: 'error', reason: 'unknown-tool' };
+    }
+
+    if (!parsed.state || typeof parsed.state !== 'object' || Array.isArray(parsed.state)) {
+      return { type: 'error', reason: 'corrupt' };
     }
 
     return { type: 'payload', data: parsed };
