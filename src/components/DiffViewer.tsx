@@ -11,6 +11,7 @@ type DiffMode = 'lines' | 'words' | 'chars';
 type ViewLayout = 'unified' | 'split';
 
 type SplitRow = {
+  type: 'unchanged' | 'changed' | 'removed' | 'added';
   left:  { text: string; lineNum: number } | null;
   right: { text: string; lineNum: number } | null;
 };
@@ -33,7 +34,7 @@ function buildSplitRows(diffResult: Diff.Change[]): SplitRow[] {
     if (!part.removed && !part.added) {
       // Unchanged — emit one row per line with both sides filled
       for (const text of splitLines(part.value)) {
-        rows.push({ left: { text, lineNum: leftNum++ }, right: { text, lineNum: rightNum++ } });
+        rows.push({ type: 'unchanged', left: { text, lineNum: leftNum++ }, right: { text, lineNum: rightNum++ } });
       }
       i++;
     } else {
@@ -51,9 +52,12 @@ function buildSplitRows(diffResult: Diff.Change[]): SplitRow[] {
       // Pair lines: min(N,M) paired rows, then placeholders for the longer side
       const count = Math.max(removedLines.length, addedLines.length);
       for (let j = 0; j < count; j++) {
+        const hasLeft = j < removedLines.length;
+        const hasRight = j < addedLines.length;
         rows.push({
-          left:  j < removedLines.length ? { text: removedLines[j], lineNum: leftNum++ } : null,
-          right: j < addedLines.length  ? { text: addedLines[j],  lineNum: rightNum++ } : null,
+          type: hasLeft && hasRight ? 'changed' : hasLeft ? 'removed' : 'added',
+          left:  hasLeft  ? { text: removedLines[j], lineNum: leftNum++ }  : null,
+          right: hasRight ? { text: addedLines[j],   lineNum: rightNum++ } : null,
         });
       }
     }
@@ -150,7 +154,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                 <div
                   key={i}
                   className={`flex items-start gap-2 px-2 py-0.5 min-w-0 ${
-                    row.left && !row.right
+                    row.type === 'removed' || row.type === 'changed'
                       ? 'bg-red-50 dark:bg-red-900/20'
                       : 'bg-transparent'
                   }`}
@@ -160,9 +164,9 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                   </span>
                   <span
                     className={`whitespace-pre overflow-x-hidden ${
-                      row.left && !row.right
+                      row.type === 'removed' || row.type === 'changed'
                         ? 'text-red-700 dark:text-red-300'
-                        : row.left
+                        : row.type === 'unchanged'
                         ? 'text-slate-600 dark:text-slate-400'
                         : 'select-none opacity-0'
                     }`}
@@ -182,7 +186,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                 <div
                   key={i}
                   className={`flex items-start gap-2 px-2 py-0.5 min-w-0 ${
-                    row.right && !row.left
+                    row.type === 'added' || row.type === 'changed'
                       ? 'bg-green-50 dark:bg-green-900/20'
                       : 'bg-transparent'
                   }`}
@@ -192,9 +196,9 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                   </span>
                   <span
                     className={`whitespace-pre overflow-x-hidden ${
-                      row.right && !row.left
+                      row.type === 'added' || row.type === 'changed'
                         ? 'text-green-700 dark:text-green-300'
-                        : row.right
+                        : row.type === 'unchanged'
                         ? 'text-slate-600 dark:text-slate-400'
                         : 'select-none opacity-0'
                     }`}
