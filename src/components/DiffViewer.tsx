@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import * as Diff from 'diff';
 import ToolLayout from './ToolLayout';
@@ -69,13 +69,36 @@ interface DiffViewerProps {
 const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
   const [textA, setTextA] = usePersistedState('tp:diff:textA', '', true);
   const [textB, setTextB] = usePersistedState('tp:diff:textB', '', true);
+  const [showDiff, setShowDiff] = useState(false);
+  const [mode, setMode] = usePersistedState<DiffMode>('tp:diff:mode', 'lines');
+  const [viewLayout, setViewLayout] = usePersistedState<ViewLayout>('tp:diff:viewLayout', 'unified');
+
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+  const isSyncing = useRef(false);
 
   useEffect(() => {
     if (initialState?.left !== undefined) setTextA(initialState.left);
     if (initialState?.right !== undefined) setTextB(initialState.right);
   }, []);
-  const [showDiff, setShowDiff] = useState(false);
-  const [mode, setMode] = usePersistedState<DiffMode>('tp:diff:mode', 'lines');
+
+  useEffect(() => {
+    if (viewLayout === 'split' && mode !== 'lines') setMode('lines');
+  }, [viewLayout]);
+
+  const handleLeftScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+    if (rightPanelRef.current) rightPanelRef.current.scrollTop = e.currentTarget.scrollTop;
+    isSyncing.current = false;
+  }, []);
+
+  const handleRightScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+    if (leftPanelRef.current) leftPanelRef.current.scrollTop = e.currentTarget.scrollTop;
+    isSyncing.current = false;
+  }, []);
 
   const diffResult = useMemo(() => {
     if (!showDiff) return [];
