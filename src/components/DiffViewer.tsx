@@ -19,24 +19,41 @@ function buildSplitRows(diffResult: Diff.Change[]): SplitRow[] {
   const rows: SplitRow[] = [];
   let leftNum = 1;
   let rightNum = 1;
+  let i = 0;
 
-  for (const part of diffResult) {
-    const lines = part.value.split('\n');
+  const splitLines = (value: string): string[] => {
+    const lines = value.split('\n');
     if (lines[lines.length - 1] === '') lines.pop();
+    return lines;
+  };
 
-    if (part.removed) {
-      for (const text of lines) {
-        rows.push({ left: { text, lineNum: leftNum++ }, right: null });
+  while (i < diffResult.length) {
+    const part = diffResult[i];
+
+    if (!part.removed && !part.added) {
+      // Unchanged — emit one row per line with both sides filled
+      for (const text of splitLines(part.value)) {
+        rows.push({ left: { text, lineNum: leftNum++ }, right: { text, lineNum: rightNum++ } });
       }
-    } else if (part.added) {
-      for (const text of lines) {
-        rows.push({ left: null, right: { text, lineNum: rightNum++ } });
-      }
+      i++;
     } else {
-      for (const text of lines) {
+      // Collect all consecutive removed + added lines as a paired block
+      const removedLines: string[] = [];
+      const addedLines: string[] = [];
+      while (i < diffResult.length && (diffResult[i].removed || diffResult[i].added)) {
+        if (diffResult[i].removed) {
+          removedLines.push(...splitLines(diffResult[i].value));
+        } else {
+          addedLines.push(...splitLines(diffResult[i].value));
+        }
+        i++;
+      }
+      // Pair lines: min(N,M) paired rows, then placeholders for the longer side
+      const count = Math.max(removedLines.length, addedLines.length);
+      for (let j = 0; j < count; j++) {
         rows.push({
-          left:  { text, lineNum: leftNum++ },
-          right: { text, lineNum: rightNum++ },
+          left:  j < removedLines.length ? { text: removedLines[j], lineNum: leftNum++ } : null,
+          right: j < addedLines.length  ? { text: addedLines[j],  lineNum: rightNum++ } : null,
         });
       }
     }
