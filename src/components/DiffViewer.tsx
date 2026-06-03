@@ -242,35 +242,64 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
               </div>
             </div>
 
-            {/* Mode Selector */}
-            <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-              <button
-                onClick={() => setMode('lines')}
-                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'lines'
-                  ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
-              >
-                <AlignJustify size={14} /> Lines
-              </button>
-              <button
-                onClick={() => setMode('words')}
-                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'words'
-                  ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
-              >
-                <AlignLeft size={14} /> Words
-              </button>
-              <button
-                onClick={() => setMode('chars')}
-                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'chars'
-                  ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
-              >
-                <Type size={14} /> Chars
-              </button>
+            <div className="flex items-center gap-2">
+              {/* Layout toggle */}
+              <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                <button
+                  onClick={() => setViewLayout('unified')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewLayout === 'unified'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                >
+                  <AlignJustify size={14} /> Unified
+                </button>
+                <button
+                  onClick={() => {
+                    setViewLayout('split');
+                    if (mode !== 'lines') setMode('lines');
+                  }}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewLayout === 'split'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                >
+                  <Columns size={14} /> Split
+                </button>
+              </div>
+
+              {/* Mode Selector */}
+              <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                <button
+                  onClick={() => setMode('lines')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'lines'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                >
+                  <AlignJustify size={14} /> Lines
+                </button>
+                <button
+                  onClick={() => setMode('words')}
+                  disabled={viewLayout === 'split'}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'words'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    } ${viewLayout === 'split' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                >
+                  <AlignLeft size={14} /> Words
+                </button>
+                <button
+                  onClick={() => setMode('chars')}
+                  disabled={viewLayout === 'split'}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'chars'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    } ${viewLayout === 'split' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                >
+                  <Type size={14} /> Chars
+                </button>
+              </div>
             </div>
           </div>
 
