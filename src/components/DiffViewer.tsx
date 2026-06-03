@@ -125,6 +125,86 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
       );
     }
 
+    if (viewLayout === 'split') {
+      const rows = buildSplitRows(diffResult);
+      return (
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Column headers */}
+          <div className="grid grid-cols-2 shrink-0 border-b border-slate-100 dark:border-slate-800">
+            <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-r border-slate-100 dark:border-slate-800">
+              Original (A)
+            </div>
+            <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              New (B)
+            </div>
+          </div>
+          {/* Two scrollable panels */}
+          <div className="grid grid-cols-2 flex-1 min-h-0">
+            {/* Left panel — Original */}
+            <div
+              ref={leftPanelRef}
+              onScroll={handleLeftScroll}
+              className="overflow-auto font-mono text-sm bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800"
+            >
+              {rows.map((row, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-2 px-2 py-0.5 min-w-0 ${
+                    row.left
+                      ? 'bg-red-50 dark:bg-red-900/20'
+                      : 'bg-slate-50 dark:bg-slate-900/50'
+                  }`}
+                >
+                  <span className="w-8 shrink-0 select-none text-right text-xs pt-0.5 text-slate-300 dark:text-slate-600">
+                    {row.left?.lineNum ?? ''}
+                  </span>
+                  <span
+                    className={`whitespace-pre-wrap break-all ${
+                      row.left
+                        ? 'text-red-700 dark:text-red-300'
+                        : 'select-none opacity-0'
+                    }`}
+                  >
+                    {row.left?.text ?? ' '}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {/* Right panel — New */}
+            <div
+              ref={rightPanelRef}
+              onScroll={handleRightScroll}
+              className="overflow-auto font-mono text-sm bg-white dark:bg-slate-900"
+            >
+              {rows.map((row, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-2 px-2 py-0.5 min-w-0 ${
+                    row.right
+                      ? 'bg-green-50 dark:bg-green-900/20'
+                      : 'bg-slate-50 dark:bg-slate-900/50'
+                  }`}
+                >
+                  <span className="w-8 shrink-0 select-none text-right text-xs pt-0.5 text-slate-300 dark:text-slate-600">
+                    {row.right?.lineNum ?? ''}
+                  </span>
+                  <span
+                    className={`whitespace-pre-wrap break-all ${
+                      row.right
+                        ? 'text-green-700 dark:text-green-300'
+                        : 'select-none opacity-0'
+                    }`}
+                  >
+                    {row.right?.text ?? ' '}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (mode === 'lines') {
       let lineIndex = 1;
       return (
