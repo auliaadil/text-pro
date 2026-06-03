@@ -83,7 +83,7 @@ const AboutPage: React.FC = () => {
                     </p>
                     <div className="flex items-center justify-center gap-3 pt-2">
                         <span className="px-3 py-1 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-blue-800">
-                            v1.0.0
+                            {import.meta.env.VITE_APP_VERSION ?? 'dev'}
                         </span>
                         <span className="px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-full border border-emerald-100 dark:border-emerald-800">
                             PWA
