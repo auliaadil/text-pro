@@ -22,6 +22,7 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
 }) => {
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [showTooLargeDialog, setShowTooLargeDialog] = useState(false);
+  const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
 
   const handleShare = async () => {
     if (!shareToolType || !shareState) return;
@@ -33,18 +34,28 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
       return;
     }
 
+    let copied = false;
     try {
       await navigator.clipboard.writeText(url);
+      copied = true;
     } catch {
-      const el = document.createElement('textarea');
-      el.value = url;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
+      try {
+        const el = document.createElement('textarea');
+        el.value = url;
+        document.body.appendChild(el);
+        el.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch {
+        // both methods failed
+      }
     }
 
-    setShowCopiedToast(true);
+    if (copied) {
+      setShowCopiedToast(true);
+    } else {
+      setShareFallbackUrl(url);
+    }
   };
 
   const canShare = shareToolType !== undefined && shareState !== undefined;
@@ -83,6 +94,13 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
         <ShareErrorDialog
           message="Your content is too large to share via URL. Try reducing the input size."
           onClose={() => setShowTooLargeDialog(false)}
+        />
+      )}
+
+      {shareFallbackUrl && (
+        <ShareErrorDialog
+          message={`Could not copy automatically. Copy this link manually:\n\n${shareFallbackUrl}`}
+          onClose={() => setShareFallbackUrl(null)}
         />
       )}
     </>

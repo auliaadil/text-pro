@@ -42,6 +42,7 @@ const App: React.FC = () => {
 
   const [isScrollingAllowed, setIsScrollingAllowed] = useState(!isCollapsed);
   const [shareInitialState, setShareInitialState] = useState<Record<string, string> | undefined>(undefined);
+  const [shareKey, setShareKey] = useState('default');
   const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,7 +79,9 @@ const App: React.FC = () => {
     if (result.type === 'payload') {
       setActiveTool(result.data.tool);
       setShareInitialState(result.data.state);
+      setShareKey(Date.now().toString());
       history.replaceState(null, '', window.location.pathname + window.location.search);
+      setTimeout(() => setShareInitialState(undefined), 0);
     } else if (result.type === 'error') {
       const message = result.reason === 'unknown-tool'
         ? "This share link references a tool that doesn't exist. The app has loaded normally."
@@ -100,14 +103,14 @@ const App: React.FC = () => {
 
   const renderTool = () => {
     switch (activeTool) {
-      case ToolType.COUNTER:      return <TextCounter initialState={shareInitialState} />;
-      case ToolType.SPLITTER:     return <TextSplitter initialState={shareInitialState} />;
-      case ToolType.REFORMATTER:  return <TextReformatter initialState={shareInitialState} />;
-      case ToolType.DIFF:         return <DiffViewer initialState={shareInitialState} />;
-      case ToolType.JSON:         return <JsonFormatter initialState={shareInitialState} />;
-      case ToolType.HTML:         return <HtmlFormatter initialState={shareInitialState} />;
-      case ToolType.MARKDOWN:     return <MarkdownViewer initialState={shareInitialState} />;
-      case ToolType.AI_ASSISTANT: return <AiAssistant initialState={shareInitialState} />;
+      case ToolType.COUNTER:      return <TextCounter key={shareKey} initialState={shareInitialState} />;
+      case ToolType.SPLITTER:     return <TextSplitter key={shareKey} initialState={shareInitialState} />;
+      case ToolType.REFORMATTER:  return <TextReformatter key={shareKey} initialState={shareInitialState} />;
+      case ToolType.DIFF:         return <DiffViewer key={shareKey} initialState={shareInitialState} />;
+      case ToolType.JSON:         return <JsonFormatter key={shareKey} initialState={shareInitialState} />;
+      case ToolType.HTML:         return <HtmlFormatter key={shareKey} initialState={shareInitialState} />;
+      case ToolType.MARKDOWN:     return <MarkdownViewer key={shareKey} initialState={shareInitialState} />;
+      case ToolType.AI_ASSISTANT: return <AiAssistant key={shareKey} initialState={shareInitialState} />;
       case ToolType.ABOUT:        return <AboutPage />;
       default:                    return <TextCounter />;
     }
