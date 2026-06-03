@@ -90,14 +90,14 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
     if (isSyncing.current) return;
     isSyncing.current = true;
     if (rightPanelRef.current) rightPanelRef.current.scrollTop = e.currentTarget.scrollTop;
-    isSyncing.current = false;
+    requestAnimationFrame(() => { isSyncing.current = false; });
   }, []);
 
   const handleRightScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (isSyncing.current) return;
     isSyncing.current = true;
     if (leftPanelRef.current) leftPanelRef.current.scrollTop = e.currentTarget.scrollTop;
-    isSyncing.current = false;
+    requestAnimationFrame(() => { isSyncing.current = false; });
   }, []);
 
   const diffResult = useMemo(() => {
@@ -150,18 +150,20 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                 <div
                   key={i}
                   className={`flex items-start gap-2 px-2 py-0.5 min-w-0 ${
-                    row.left
+                    row.left && !row.right
                       ? 'bg-red-50 dark:bg-red-900/20'
-                      : 'bg-slate-50 dark:bg-slate-900/50'
+                      : 'bg-transparent'
                   }`}
                 >
                   <span className="w-8 shrink-0 select-none text-right text-xs pt-0.5 text-slate-300 dark:text-slate-600">
                     {row.left?.lineNum ?? ''}
                   </span>
                   <span
-                    className={`whitespace-pre-wrap break-all ${
-                      row.left
+                    className={`whitespace-pre overflow-x-hidden ${
+                      row.left && !row.right
                         ? 'text-red-700 dark:text-red-300'
+                        : row.left
+                        ? 'text-slate-600 dark:text-slate-400'
                         : 'select-none opacity-0'
                     }`}
                   >
@@ -180,18 +182,20 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                 <div
                   key={i}
                   className={`flex items-start gap-2 px-2 py-0.5 min-w-0 ${
-                    row.right
+                    row.right && !row.left
                       ? 'bg-green-50 dark:bg-green-900/20'
-                      : 'bg-slate-50 dark:bg-slate-900/50'
+                      : 'bg-transparent'
                   }`}
                 >
                   <span className="w-8 shrink-0 select-none text-right text-xs pt-0.5 text-slate-300 dark:text-slate-600">
                     {row.right?.lineNum ?? ''}
                   </span>
                   <span
-                    className={`whitespace-pre-wrap break-all ${
-                      row.right
+                    className={`whitespace-pre overflow-x-hidden ${
+                      row.right && !row.left
                         ? 'text-green-700 dark:text-green-300'
+                        : row.right
+                        ? 'text-slate-600 dark:text-slate-400'
                         : 'select-none opacity-0'
                     }`}
                   >
