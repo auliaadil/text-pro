@@ -84,6 +84,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
   useEffect(() => {
     if (initialState?.left !== undefined) setTextA(initialState.left);
     if (initialState?.right !== undefined) setTextB(initialState.right);
+    if (initialState?.showDiff === 'true') setShowDiff(true);
   }, []);
 
   useEffect(() => {
@@ -268,7 +269,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
     <ToolLayout
       description="Compare two text sources to identify additions, removals, and changes with varying levels of granularity."
       shareToolType={ToolType.DIFF}
-      shareState={{ left: textA, right: textB }}
+      shareState={{ left: textA, right: textB, ...(showDiff && { showDiff: 'true' }) }}
       actions={
         showDiff ? (
           <button
