@@ -35,14 +35,14 @@ import { parseShareHash } from './services/shareService';
 import ShareErrorDialog from './components/ShareErrorDialog';
 
 const TOOL_PATHS: Record<ToolType, string> = {
-  [ToolType.COUNTER]: '/counter',
-  [ToolType.SPLITTER]: '/splitter',
+  [ToolType.COUNTER]: '/text-counter',
+  [ToolType.SPLITTER]: '/text-splitter',
   [ToolType.REFORMATTER]: '/reformatter',
-  [ToolType.DIFF]: '/diff',
-  [ToolType.JSON]: '/json',
-  [ToolType.HTML]: '/html',
-  [ToolType.MARKDOWN]: '/markdown',
-  [ToolType.AI_ASSISTANT]: '/ai',
+  [ToolType.DIFF]: '/diff-checker',
+  [ToolType.JSON]: '/json-formatter',
+  [ToolType.HTML]: '/html-formatter',
+  [ToolType.MARKDOWN]: '/markdown-viewer',
+  [ToolType.AI_ASSISTANT]: '/ai-assistant',
   [ToolType.ABOUT]: '/about',
 };
 
@@ -116,7 +116,7 @@ const App: React.FC = () => {
     { id: ToolType.COUNTER, name: 'Text Counter', icon: <Hash size={20} /> },
     { id: ToolType.SPLITTER, name: 'Text Splitter', icon: <Scissors size={20} /> },
     { id: ToolType.REFORMATTER, name: 'Reformatter', icon: <Type size={20} /> },
-    { id: ToolType.DIFF, name: 'Diff Viewer', icon: <FileDiff size={20} /> },
+    { id: ToolType.DIFF, name: 'Diff Checker', icon: <FileDiff size={20} /> },
     { id: ToolType.JSON, name: 'JSON Formatter', icon: <Code size={20} /> },
     { id: ToolType.HTML, name: 'HTML Formatter', icon: <FileCode size={20} /> },
     { id: ToolType.MARKDOWN, name: 'MD Viewer', icon: <Eye size={20} /> },
@@ -310,15 +310,15 @@ const App: React.FC = () => {
         <section className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth flex flex-col">
           <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col min-h-0">
             <Routes>
-              <Route path="/" element={<Navigate to="/counter" replace />} />
-              <Route path="/counter" element={<TextCounter key={shareKey} initialState={si(ToolType.COUNTER)} />} />
-              <Route path="/splitter" element={<TextSplitter key={shareKey} initialState={si(ToolType.SPLITTER)} />} />
+              <Route path="/" element={<Navigate to="/text-counter" replace />} />
+              <Route path="/text-counter" element={<TextCounter key={shareKey} initialState={si(ToolType.COUNTER)} />} />
+              <Route path="/text-splitter" element={<TextSplitter key={shareKey} initialState={si(ToolType.SPLITTER)} />} />
               <Route path="/reformatter" element={<TextReformatter key={shareKey} initialState={si(ToolType.REFORMATTER)} />} />
-              <Route path="/diff" element={<DiffViewer key={shareKey} initialState={si(ToolType.DIFF)} />} />
-              <Route path="/json" element={<JsonFormatter key={shareKey} initialState={si(ToolType.JSON)} />} />
-              <Route path="/html" element={<HtmlFormatter key={shareKey} initialState={si(ToolType.HTML)} />} />
-              <Route path="/markdown" element={<MarkdownViewer key={shareKey} initialState={si(ToolType.MARKDOWN)} />} />
-              <Route path="/ai" element={<AiAssistant key={shareKey} initialState={si(ToolType.AI_ASSISTANT)} />} />
+              <Route path="/diff-checker" element={<DiffViewer key={shareKey} initialState={si(ToolType.DIFF)} />} />
+              <Route path="/json-formatter" element={<JsonFormatter key={shareKey} initialState={si(ToolType.JSON)} />} />
+              <Route path="/html-formatter" element={<HtmlFormatter key={shareKey} initialState={si(ToolType.HTML)} />} />
+              <Route path="/markdown-viewer" element={<MarkdownViewer key={shareKey} initialState={si(ToolType.MARKDOWN)} />} />
+              <Route path="/ai-assistant" element={<AiAssistant key={shareKey} initialState={si(ToolType.AI_ASSISTANT)} />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="*" element={<Navigate to="/counter" replace />} />
             </Routes>
