@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Navigate, Routes, Route } from 'react-router-dom';
 import { usePersistedState } from './hooks/usePersistedState';
 import {
-  Hash,
-  Scissors,
+  ScanText,
   Type,
   FileDiff,
   Code,
@@ -21,8 +20,7 @@ import {
   Database
 } from 'lucide-react';
 import { ToolType } from './types';
-import TextCounter from './components/TextCounter';
-import TextSplitter from './components/TextSplitter';
+import TextAnalyzer from './components/TextAnalyzer';
 import TextReformatter from './components/TextReformatter';
 import DiffViewer from './components/DiffViewer';
 import JsonFormatter from './components/JsonFormatter';
@@ -114,8 +112,7 @@ const App: React.FC = () => {
   }, []);
 
   const tools = [
-    { id: ToolType.COUNTER, name: 'Text Counter', icon: <Hash size={20} /> },
-    { id: ToolType.SPLITTER, name: 'Text Splitter', icon: <Scissors size={20} /> },
+    { id: ToolType.ANALYZER, name: 'Text Analyzer', icon: <ScanText size={20} /> },
     { id: ToolType.REFORMATTER, name: 'Reformatter', icon: <Type size={20} /> },
     { id: ToolType.DIFF, name: 'Diff Checker', icon: <FileDiff size={20} /> },
     { id: ToolType.JSON, name: 'JSON Formatter', icon: <Code size={20} /> },
@@ -124,7 +121,11 @@ const App: React.FC = () => {
     { id: ToolType.AI_ASSISTANT, name: 'AI Assistant', icon: <Sparkles size={20} />, primary: true },
   ];
 
-  const si = (tool: ToolType) => tool === shareTargetTool ? shareInitialState : undefined;
+  const effectiveShareTarget = shareTargetTool === ToolType.COUNTER || shareTargetTool === ToolType.SPLITTER
+    ? ToolType.ANALYZER
+    : shareTargetTool;
+
+  const si = (tool: ToolType) => tool === effectiveShareTarget ? shareInitialState : undefined;
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -311,9 +312,10 @@ const App: React.FC = () => {
         <section className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth flex flex-col">
           <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col min-h-0">
             <Routes>
-              <Route path="/" element={<Navigate to="/text-counter" replace />} />
-              <Route path="/text-counter" element={<TextCounter key={shareKey} initialState={si(ToolType.COUNTER)} />} />
-              <Route path="/text-splitter" element={<TextSplitter key={shareKey} initialState={si(ToolType.SPLITTER)} />} />
+              <Route path="/" element={<Navigate to="/text-analyzer" replace />} />
+              <Route path="/text-analyzer" element={<TextAnalyzer key={shareKey} initialState={si(ToolType.ANALYZER)} />} />
+              <Route path="/text-counter" element={<Navigate to="/text-analyzer" replace />} />
+              <Route path="/text-splitter" element={<Navigate to="/text-analyzer" replace />} />
               <Route path="/reformatter" element={<TextReformatter key={shareKey} initialState={si(ToolType.REFORMATTER)} />} />
               <Route path="/diff-checker" element={<DiffViewer key={shareKey} initialState={si(ToolType.DIFF)} />} />
               <Route path="/json-formatter" element={<JsonFormatter key={shareKey} initialState={si(ToolType.JSON)} />} />
@@ -321,7 +323,7 @@ const App: React.FC = () => {
               <Route path="/markdown-viewer" element={<MarkdownViewer key={shareKey} initialState={si(ToolType.MARKDOWN)} />} />
               <Route path="/ai-assistant" element={<AiAssistant key={shareKey} initialState={si(ToolType.AI_ASSISTANT)} />} />
               <Route path="/about" element={<AboutPage />} />
-              <Route path="*" element={<Navigate to="/counter" replace />} />
+              <Route path="*" element={<Navigate to="/text-analyzer" replace />} />
             </Routes>
           </div>
         </section>
