@@ -10,8 +10,7 @@ export function encode(tool: ToolType, state: Record<string, string>): string {
 
 export function buildShareUrl(tool: ToolType, state: Record<string, string>): string {
   const compressed = encode(tool, state);
-  const base = `${window.location.origin}${window.location.pathname}`;
-  return `${base}#${HASH_PREFIX}${compressed}`;
+  return `${window.location.origin}${window.location.pathname}#${HASH_PREFIX}${compressed}`;
 }
 
 export function parseShareHash(): ShareResult {
