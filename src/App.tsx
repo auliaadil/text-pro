@@ -45,9 +45,16 @@ const TOOL_PATHS: Record<ToolType, string> = {
   [ToolType.ABOUT]: '/about',
 };
 
-const PATH_TO_TOOL: Record<string, ToolType> = Object.fromEntries(
-  Object.entries(TOOL_PATHS).map(([tool, path]) => [path, tool as ToolType])
-);
+const PATH_TO_TOOL: Record<string, ToolType> = {
+  '/text-analyzer': ToolType.ANALYZER,
+  '/reformatter': ToolType.REFORMATTER,
+  '/diff-checker': ToolType.DIFF,
+  '/json-formatter': ToolType.JSON,
+  '/html-formatter': ToolType.HTML,
+  '/markdown-viewer': ToolType.MARKDOWN,
+  '/ai-assistant': ToolType.AI_ASSISTANT,
+  '/about': ToolType.ABOUT,
+};
 
 function toolFromPath(pathname: string): ToolType | null {
   return PATH_TO_TOOL[pathname] ?? null;

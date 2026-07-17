@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import ToolLayout from './ToolLayout';
-import { Copy, Trash2, Clock, AlignLeft, Hash, Scissors, ScanText } from 'lucide-react';
+import { Copy, Trash2, Clock, AlignLeft, Hash, Scissors } from 'lucide-react';
 import Toast from './Toast';
 import { ToolType } from '../types';
 
@@ -49,7 +49,10 @@ const DelimiterPicker: React.FC<DelimiterPickerProps> = ({
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    };
   }, []);
 
   const handleCharEnter = () => {
@@ -192,7 +195,7 @@ const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ initialState }) => {
     const trimmed = text.trim();
     const words = trimmed === '' ? 0 : trimmed.split(/\s+/).length;
     const chars = text.length;
-    const lines = text === '' ? 0 : text.split('\n').length;
+    const lines = trimmed === '' ? 0 : text.split('\n').length;
     const sentences = trimmed === '' ? 0 : trimmed.split(/[.!?]+/).filter(Boolean).length;
     const paragraphs = trimmed === '' ? 0 : trimmed.split(/\n\s*\n/).length;
     const readingTime = Math.ceil(words / 200);
@@ -209,15 +212,19 @@ const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ initialState }) => {
       : delimiter === 'custom' ? customDelimiter
       : delimiter;
     if (!active) return 0;
-    return text.split(active).length - 1;
+    return text.split(active).filter(p => p.trim() !== '').length;
   }, [text, delimiter, charDelimiter, customDelimiter, charLimit]);
 
   const occurrenceLabel = useMemo(() => {
-    if (delimiter === 'char_limit') return 'Est. Chunks';
-    if (delimiter === '\n') return 'New Lines';
-    if (delimiter === 'character') return `${CHAR_LABELS[charDelimiter] ?? charDelimiter}s`;
-    return 'Matches';
+    if (delimiter === 'char_limit') return 'Chunks';
+    if (delimiter === '\n') return 'Parts';
+    if (delimiter === 'character') return 'Parts';
+    return 'Parts';
   }, [delimiter, charDelimiter]);
+
+  useEffect(() => {
+    setResults([]);
+  }, [delimiter, charDelimiter, customDelimiter]);
 
   const handleSplit = () => {
     if (delimiter === 'char_limit') {
@@ -235,10 +242,15 @@ const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ initialState }) => {
     setResults(text.split(active).filter(p => p.trim() !== ''));
   };
 
-  const handleCopy = (content: string, msg: string) => {
-    navigator.clipboard.writeText(content);
-    setToastMessage(msg);
-    setShowToast(true);
+  const handleCopy = async (content: string, msg: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setToastMessage(msg);
+      setShowToast(true);
+    } catch {
+      setToastMessage('Failed to copy');
+      setShowToast(true);
+    }
   };
 
   const handleClear = () => {
@@ -324,7 +336,7 @@ const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ initialState }) => {
                 <StatBox icon={<Hash size={16} />} label="Lines" value={stats.lines} />
                 <StatBox icon={<Hash size={16} />} label="Sentences" value={stats.sentences} />
                 <StatBox icon={<Hash size={16} />} label="Paragraphs" value={stats.paragraphs} />
-                <StatBox icon={<Clock size={16} />} label="Read Time" value={`${stats.readingTime}m`} />
+                <StatBox icon={<Clock size={16} />} label="Read Time" value={stats.readingTime === 0 ? '—' : `${stats.readingTime}m`} />
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3">
