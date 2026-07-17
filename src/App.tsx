@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Navigate, Routes, Route } from 'react-router-dom';
 import { usePersistedState } from './hooks/usePersistedState';
 import {
   Hash,
@@ -33,8 +34,29 @@ import { Analytics } from '@vercel/analytics/react';
 import { parseShareHash } from './services/shareService';
 import ShareErrorDialog from './components/ShareErrorDialog';
 
+const TOOL_PATHS: Record<ToolType, string> = {
+  [ToolType.COUNTER]: '/text-counter',
+  [ToolType.SPLITTER]: '/text-splitter',
+  [ToolType.REFORMATTER]: '/reformatter',
+  [ToolType.DIFF]: '/diff-checker',
+  [ToolType.JSON]: '/json-formatter',
+  [ToolType.HTML]: '/html-formatter',
+  [ToolType.MARKDOWN]: '/markdown-viewer',
+  [ToolType.AI_ASSISTANT]: '/ai-assistant',
+  [ToolType.ABOUT]: '/about',
+};
+
+const PATH_TO_TOOL: Record<string, ToolType> = Object.fromEntries(
+  Object.entries(TOOL_PATHS).map(([tool, path]) => [path, tool as ToolType])
+);
+
+function toolFromPath(pathname: string): ToolType | null {
+  return PATH_TO_TOOL[pathname] ?? null;
+}
+
 const App: React.FC = () => {
-  const [activeTool, setActiveTool] = usePersistedState<ToolType>('tp:activeTool', ToolType.COUNTER);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isCollapsed, setIsCollapsed] = usePersistedState('tp:sidebarCollapsed', false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = usePersistedState('tp:darkMode', false);
@@ -46,6 +68,8 @@ const App: React.FC = () => {
   const [shareKey, setShareKey] = useState('default');
   const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
 
+  const activeTool = toolFromPath(location.pathname);
+
   useEffect(() => {
     if (isCollapsed) {
       setIsScrollingAllowed(false);
@@ -55,7 +79,6 @@ const App: React.FC = () => {
     }
   }, [isCollapsed]);
 
-  // Initialize dark mode
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -64,7 +87,6 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  // Close mobile menu on resize if screen becomes large
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -78,11 +100,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const result = parseShareHash();
     if (result.type === 'payload') {
-      setActiveTool(result.data.tool);
       setShareInitialState(result.data.state);
       setShareTargetTool(result.data.tool);
       setShareKey(Date.now().toString());
-      history.replaceState(null, '', window.location.pathname + window.location.search);
+      navigate(TOOL_PATHS[result.data.tool], { replace: true });
     } else if (result.type === 'error') {
       const message = result.reason === 'unknown-tool'
         ? "This share link references a tool that doesn't exist. The app has loaded normally."
@@ -95,28 +116,14 @@ const App: React.FC = () => {
     { id: ToolType.COUNTER, name: 'Text Counter', icon: <Hash size={20} /> },
     { id: ToolType.SPLITTER, name: 'Text Splitter', icon: <Scissors size={20} /> },
     { id: ToolType.REFORMATTER, name: 'Reformatter', icon: <Type size={20} /> },
-    { id: ToolType.DIFF, name: 'Diff Viewer', icon: <FileDiff size={20} /> },
+    { id: ToolType.DIFF, name: 'Diff Checker', icon: <FileDiff size={20} /> },
     { id: ToolType.JSON, name: 'JSON Formatter', icon: <Code size={20} /> },
     { id: ToolType.HTML, name: 'HTML Formatter', icon: <FileCode size={20} /> },
     { id: ToolType.MARKDOWN, name: 'MD Viewer', icon: <Eye size={20} /> },
     { id: ToolType.AI_ASSISTANT, name: 'AI Assistant', icon: <Sparkles size={20} />, primary: true },
   ];
 
-  const renderTool = () => {
-    const si = (tool: ToolType) => tool === shareTargetTool ? shareInitialState : undefined;
-    switch (activeTool) {
-      case ToolType.COUNTER:      return <TextCounter key={shareKey} initialState={si(ToolType.COUNTER)} />;
-      case ToolType.SPLITTER:     return <TextSplitter key={shareKey} initialState={si(ToolType.SPLITTER)} />;
-      case ToolType.REFORMATTER:  return <TextReformatter key={shareKey} initialState={si(ToolType.REFORMATTER)} />;
-      case ToolType.DIFF:         return <DiffViewer key={shareKey} initialState={si(ToolType.DIFF)} />;
-      case ToolType.JSON:         return <JsonFormatter key={shareKey} initialState={si(ToolType.JSON)} />;
-      case ToolType.HTML:         return <HtmlFormatter key={shareKey} initialState={si(ToolType.HTML)} />;
-      case ToolType.MARKDOWN:     return <MarkdownViewer key={shareKey} initialState={si(ToolType.MARKDOWN)} />;
-      case ToolType.AI_ASSISTANT: return <AiAssistant key={shareKey} initialState={si(ToolType.AI_ASSISTANT)} />;
-      case ToolType.ABOUT:        return <AboutPage />;
-      default:                    return <TextCounter />;
-    }
-  };
+  const si = (tool: ToolType) => tool === shareTargetTool ? shareInitialState : undefined;
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -156,15 +163,13 @@ const App: React.FC = () => {
           </div>
         </div>
 
-
-
         {/* Navigation */}
         <nav className={`flex-1 px-3 py-4 space-y-2 scrollbar-hide ${!isCollapsed && isScrollingAllowed ? 'overflow-y-auto' : 'overflow-hidden'}`}>
           {tools.map((tool) => (
             <button
               key={tool.id}
               onClick={() => {
-                setActiveTool(tool.id);
+                navigate(TOOL_PATHS[tool.id]);
                 setIsMobileOpen(false);
               }}
               className={`
@@ -200,7 +205,7 @@ const App: React.FC = () => {
         <div className="p-3 mt-auto border-t border-slate-50 dark:border-slate-800 space-y-1">
           <button
             onClick={() => {
-              setActiveTool(ToolType.ABOUT);
+              navigate(TOOL_PATHS[ToolType.ABOUT]);
               setIsMobileOpen(false);
             }}
             className={`
@@ -250,8 +255,6 @@ const App: React.FC = () => {
               const newValue = !sessionSave;
               setSessionSave(newValue);
               if (!newValue) {
-                // If turning off, dispatch the custom event so usePersistedState hooks can clear storage
-                // We use a small timeout to allow React state to render the new toggle value first
                 setTimeout(() => window.dispatchEvent(new Event('tp-session-save-changed')), 0);
               }
             }}
@@ -298,7 +301,7 @@ const App: React.FC = () => {
         <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 lg:px-8 pl-20 lg:pl-8 sticky top-0 z-10">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-              {tools.find(t => t.id === activeTool)?.name || 'About'}
+              {tools.find(t => t.id === activeTool)?.name ?? 'About'}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">Manage and transform your text efficiently</p>
           </div>
@@ -306,7 +309,19 @@ const App: React.FC = () => {
 
         <section className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth flex flex-col">
           <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col min-h-0">
-            {renderTool()}
+            <Routes>
+              <Route path="/" element={<Navigate to="/text-counter" replace />} />
+              <Route path="/text-counter" element={<TextCounter key={shareKey} initialState={si(ToolType.COUNTER)} />} />
+              <Route path="/text-splitter" element={<TextSplitter key={shareKey} initialState={si(ToolType.SPLITTER)} />} />
+              <Route path="/reformatter" element={<TextReformatter key={shareKey} initialState={si(ToolType.REFORMATTER)} />} />
+              <Route path="/diff-checker" element={<DiffViewer key={shareKey} initialState={si(ToolType.DIFF)} />} />
+              <Route path="/json-formatter" element={<JsonFormatter key={shareKey} initialState={si(ToolType.JSON)} />} />
+              <Route path="/html-formatter" element={<HtmlFormatter key={shareKey} initialState={si(ToolType.HTML)} />} />
+              <Route path="/markdown-viewer" element={<MarkdownViewer key={shareKey} initialState={si(ToolType.MARKDOWN)} />} />
+              <Route path="/ai-assistant" element={<AiAssistant key={shareKey} initialState={si(ToolType.AI_ASSISTANT)} />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="*" element={<Navigate to="/counter" replace />} />
+            </Routes>
           </div>
         </section>
       </main>

@@ -42,3 +42,6 @@ temp/
 
 # Superpowers brainstorm session files
 .superpowers/
+
+# Git worktrees
+.worktrees/
