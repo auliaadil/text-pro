@@ -1,5 +1,6 @@
 
 export enum ToolType {
+  ANALYZER = 'analyzer',
   COUNTER = 'counter',
   SPLITTER = 'splitter',
   REFORMATTER = 'reformatter',

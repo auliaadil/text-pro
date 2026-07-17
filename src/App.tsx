@@ -35,8 +35,9 @@ import { parseShareHash } from './services/shareService';
 import ShareErrorDialog from './components/ShareErrorDialog';
 
 const TOOL_PATHS: Record<ToolType, string> = {
-  [ToolType.COUNTER]: '/text-counter',
-  [ToolType.SPLITTER]: '/text-splitter',
+  [ToolType.ANALYZER]: '/text-analyzer',
+  [ToolType.COUNTER]: '/text-analyzer',
+  [ToolType.SPLITTER]: '/text-analyzer',
   [ToolType.REFORMATTER]: '/reformatter',
   [ToolType.DIFF]: '/diff-checker',
   [ToolType.JSON]: '/json-formatter',
