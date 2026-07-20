@@ -39,6 +39,7 @@ tmp/
 temp/
 
 .vercel
+.supabase-account
 
 # Superpowers brainstorm session files
 .superpowers/
