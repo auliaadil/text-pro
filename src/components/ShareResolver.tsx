@@ -15,7 +15,7 @@ const ShareResolver: React.FC<ShareResolverProps> = ({ onResolved, onError }) =>
 
   useEffect(() => {
     if (!id) {
-      onError('Invalid share link.');
+      onError('This share link is invalid. The app has loaded normally.');
       return;
     }
     const keyBase64 = window.location.hash.slice(1);
@@ -24,19 +24,21 @@ const ShareResolver: React.FC<ShareResolverProps> = ({ onResolved, onError }) =>
       return;
     }
 
-    resolveShare(id, keyBase64).then(result => {
-      if (result.type === 'payload') {
-        onResolved(result.data.tool, result.data.state);
-      } else {
-        const message =
-          result.reason === 'not-found'
-            ? 'This share link has expired or does not exist. The app has loaded normally.'
-            : result.reason === 'unknown-tool'
-            ? "This share link references a tool that doesn't exist. The app has loaded normally."
-            : 'This share link appears to be broken or incomplete. The app has loaded normally.';
-        onError(message);
-      }
-    });
+    resolveShare(id, keyBase64)
+      .then(result => {
+        if (result.type === 'payload') {
+          onResolved(result.data.tool, result.data.state);
+        } else {
+          const message =
+            result.reason === 'not-found'
+              ? 'This share link has expired or does not exist. The app has loaded normally.'
+              : result.reason === 'unknown-tool'
+              ? "This share link references a tool that doesn't exist. The app has loaded normally."
+              : 'This share link appears to be broken or incomplete. The app has loaded normally.';
+          onError(message);
+        }
+      })
+      .catch(() => onError('This share link appears to be broken or incomplete. The app has loaded normally.'));
   }, []);
 
   return (

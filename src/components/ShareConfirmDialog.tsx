@@ -17,9 +17,16 @@ const ShareConfirmDialog: React.FC<ShareConfirmDialogProps> = ({ tool, state, on
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     cancelButtonRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -52,7 +59,7 @@ const ShareConfirmDialog: React.FC<ShareConfirmDialogProps> = ({ tool, state, on
       }
       if (copied) {
         setShowCopied(true);
-        setTimeout(() => {
+        copiedTimerRef.current = setTimeout(() => {
           setShowCopied(false);
           onClose();
         }, 1500);
