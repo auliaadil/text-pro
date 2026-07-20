@@ -69,9 +69,6 @@ const App: React.FC = () => {
   const [sessionSave, setSessionSave] = usePersistedState('tp:global:sessionSave', false);
 
   const [isScrollingAllowed, setIsScrollingAllowed] = useState(!isCollapsed);
-  const [shareInitialState, setShareInitialState] = useState<Record<string, string> | undefined>(undefined);
-  const [shareTargetTool, setShareTargetTool] = useState<ToolType | null>(null);
-  const [shareKey, setShareKey] = useState('default');
   const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
 
   const activeTool = toolFromPath(location.pathname);
@@ -103,15 +100,6 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleShareResolved = (tool: ToolType, state: Record<string, string>) => {
-    const effectiveTool =
-      tool === ToolType.COUNTER || tool === ToolType.SPLITTER ? ToolType.ANALYZER : tool;
-    setShareInitialState(state);
-    setShareTargetTool(effectiveTool);
-    setShareKey(Date.now().toString());
-    navigate(TOOL_PATHS[effectiveTool], { replace: true });
-  };
-
   const tools = [
     { id: ToolType.ANALYZER, name: 'Text Analyzer', icon: <ScanText size={20} /> },
     { id: ToolType.REFORMATTER, name: 'Reformatter', icon: <Type size={20} /> },
@@ -121,10 +109,6 @@ const App: React.FC = () => {
     { id: ToolType.MARKDOWN, name: 'MD Viewer', icon: <Eye size={20} /> },
     { id: ToolType.AI_ASSISTANT, name: 'AI Assistant', icon: <Sparkles size={20} />, primary: true },
   ];
-
-  const effectiveShareTarget = shareTargetTool;
-
-  const si = (tool: ToolType) => tool === effectiveShareTarget ? shareInitialState : undefined;
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -312,21 +296,20 @@ const App: React.FC = () => {
           <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col min-h-0">
             <Routes>
               <Route path="/" element={<Navigate to="/text-analyzer" replace />} />
-              <Route path="/text-analyzer" element={<TextAnalyzer key={shareKey} initialState={si(ToolType.ANALYZER)} />} />
+              <Route path="/text-analyzer" element={<TextAnalyzer />} />
               <Route path="/text-counter" element={<Navigate to="/text-analyzer" replace />} />
               <Route path="/text-splitter" element={<Navigate to="/text-analyzer" replace />} />
-              <Route path="/reformatter" element={<TextReformatter key={shareKey} initialState={si(ToolType.REFORMATTER)} />} />
-              <Route path="/diff-checker" element={<DiffViewer key={shareKey} initialState={si(ToolType.DIFF)} />} />
-              <Route path="/json-formatter" element={<JsonFormatter key={shareKey} initialState={si(ToolType.JSON)} />} />
-              <Route path="/html-formatter" element={<HtmlFormatter key={shareKey} initialState={si(ToolType.HTML)} />} />
-              <Route path="/markdown-viewer" element={<MarkdownViewer key={shareKey} initialState={si(ToolType.MARKDOWN)} />} />
-              <Route path="/ai-assistant" element={<AiAssistant key={shareKey} initialState={si(ToolType.AI_ASSISTANT)} />} />
+              <Route path="/reformatter" element={<TextReformatter />} />
+              <Route path="/diff-checker" element={<DiffViewer />} />
+              <Route path="/json-formatter" element={<JsonFormatter />} />
+              <Route path="/html-formatter" element={<HtmlFormatter />} />
+              <Route path="/markdown-viewer" element={<MarkdownViewer />} />
+              <Route path="/ai-assistant" element={<AiAssistant />} />
               <Route path="/about" element={<AboutPage />} />
               <Route
                 path="/s/:id"
                 element={
                   <ShareResolver
-                    onResolved={handleShareResolved}
                     onError={(msg) => {
                       setShareErrorMessage(msg);
                       navigate('/text-analyzer', { replace: true });

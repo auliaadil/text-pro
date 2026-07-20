@@ -17,13 +17,13 @@ export async function createShare(
   const { data, error } = await supabase
     .from('shares')
     .insert({ ciphertext, iv, expires_at })
-    .select('id')
+    .select('short_id')
     .single();
 
   if (error || !data) throw new Error(error?.message ?? 'Failed to create share');
 
   const keyBase64 = await exportKey(key);
-  return `${window.location.origin}/s/${data.id}#${keyBase64}`;
+  return `${window.location.origin}/s/${data.short_id}#${keyBase64}`;
 }
 
 export async function resolveShare(
@@ -33,7 +33,7 @@ export async function resolveShare(
   const { data, error } = await supabase
     .from('shares')
     .select('ciphertext, iv')
-    .eq('id', id)
+    .eq('short_id', id)
     .gt('expires_at', new Date().toISOString())
     .single();
 
