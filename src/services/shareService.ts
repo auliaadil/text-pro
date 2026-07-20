@@ -34,6 +34,7 @@ export async function resolveShare(
     .from('shares')
     .select('ciphertext, iv')
     .eq('id', id)
+    .gt('expires_at', new Date().toISOString())
     .single();
 
   if (error || !data) return { type: 'error', reason: 'not-found' };
@@ -47,6 +48,9 @@ export async function resolveShare(
       return { type: 'error', reason: 'unknown-tool' };
     }
     if (!parsed.state || typeof parsed.state !== 'object' || Array.isArray(parsed.state)) {
+      return { type: 'error', reason: 'corrupt' };
+    }
+    if (!Object.values(parsed.state).every(v => typeof v === 'string')) {
       return { type: 'error', reason: 'corrupt' };
     }
 

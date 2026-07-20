@@ -1,5 +1,5 @@
 // src/components/ShareResolver.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { resolveShare } from '../services/shareService';
@@ -12,8 +12,11 @@ interface ShareResolverProps {
 
 const ShareResolver: React.FC<ShareResolverProps> = ({ onResolved, onError }) => {
   const { id } = useParams<{ id: string }>();
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
     if (!id) {
       onError('This share link is invalid. The app has loaded normally.');
       return;

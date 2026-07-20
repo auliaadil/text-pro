@@ -1,3 +1,9 @@
+function bufToBase64(buf: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
+  return btoa(binary);
+}
+
 const ALGO = { name: 'AES-GCM', length: 256 } as const;
 
 export async function generateKey(): Promise<CryptoKey> {
@@ -6,7 +12,7 @@ export async function generateKey(): Promise<CryptoKey> {
 
 export async function exportKey(key: CryptoKey): Promise<string> {
   const raw = await window.crypto.subtle.exportKey('raw', key);
-  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+  return bufToBase64(new Uint8Array(raw));
 }
 
 export async function importKey(base64: string): Promise<CryptoKey> {
@@ -22,8 +28,8 @@ export async function encrypt(
   const encoded = new TextEncoder().encode(plaintext);
   const cipherbuf = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
   return {
-    ciphertext: btoa(String.fromCharCode(...new Uint8Array(cipherbuf))),
-    iv: btoa(String.fromCharCode(...iv)),
+    ciphertext: bufToBase64(new Uint8Array(cipherbuf)),
+    iv: bufToBase64(iv),
   };
 }
 

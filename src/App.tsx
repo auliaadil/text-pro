@@ -122,9 +122,7 @@ const App: React.FC = () => {
     { id: ToolType.AI_ASSISTANT, name: 'AI Assistant', icon: <Sparkles size={20} />, primary: true },
   ];
 
-  const effectiveShareTarget = shareTargetTool === ToolType.COUNTER || shareTargetTool === ToolType.SPLITTER
-    ? ToolType.ANALYZER
-    : shareTargetTool;
+  const effectiveShareTarget = shareTargetTool;
 
   const si = (tool: ToolType) => tool === effectiveShareTarget ? shareInitialState : undefined;
 
