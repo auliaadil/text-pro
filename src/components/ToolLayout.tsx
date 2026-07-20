@@ -1,9 +1,7 @@
 import React, { ReactNode, useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { ToolType } from '../types';
-import { buildShareUrl } from '../services/shareService';
-import Toast from './Toast';
-import ShareErrorDialog from './ShareErrorDialog';
+import ShareConfirmDialog from './ShareConfirmDialog';
 
 interface ToolLayoutProps {
   children: ReactNode;
@@ -20,43 +18,7 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
   shareToolType,
   shareState,
 }) => {
-  const [showCopiedToast, setShowCopiedToast] = useState(false);
-  const [showTooLargeDialog, setShowTooLargeDialog] = useState(false);
-  const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
-
-  const handleShare = async () => {
-    if (!shareToolType || !shareState) return;
-
-    const url = buildShareUrl(shareToolType, shareState);
-
-    if (url.length > 8000) {
-      setShowTooLargeDialog(true);
-      return;
-    }
-
-    let copied = false;
-    try {
-      await navigator.clipboard.writeText(url);
-      copied = true;
-    } catch {
-      try {
-        const el = document.createElement('textarea');
-        el.value = url;
-        document.body.appendChild(el);
-        el.select();
-        copied = document.execCommand('copy');
-        document.body.removeChild(el);
-      } catch {
-        // both methods failed
-      }
-    }
-
-    if (copied) {
-      setShowCopiedToast(true);
-    } else {
-      setShareFallbackUrl(url);
-    }
-  };
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const canShare = shareToolType !== undefined && shareState !== undefined;
 
@@ -71,7 +33,7 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
             {actions}
             {canShare && (
               <button
-                onClick={handleShare}
+                onClick={() => setShowConfirmDialog(true)}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
                 <Share2 size={16} /> Share
@@ -84,23 +46,11 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
         </div>
       </div>
 
-      <Toast
-        message="Link copied!"
-        isVisible={showCopiedToast}
-        onClose={() => setShowCopiedToast(false)}
-      />
-
-      {showTooLargeDialog && (
-        <ShareErrorDialog
-          message="Your content is too large to share via URL. Try reducing the input size."
-          onClose={() => setShowTooLargeDialog(false)}
-        />
-      )}
-
-      {shareFallbackUrl && (
-        <ShareErrorDialog
-          message={`Could not copy automatically. Copy this link manually:\n\n${shareFallbackUrl}`}
-          onClose={() => setShareFallbackUrl(null)}
+      {showConfirmDialog && canShare && (
+        <ShareConfirmDialog
+          tool={shareToolType!}
+          state={shareState!}
+          onClose={() => setShowConfirmDialog(false)}
         />
       )}
     </>
