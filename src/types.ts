@@ -35,4 +35,4 @@ export interface SharePayload {
 export type ShareResult =
   | { type: 'none' }
   | { type: 'payload'; data: SharePayload }
-  | { type: 'error'; reason: 'corrupt' | 'unknown-tool' };
+  | { type: 'error'; reason: 'corrupt' | 'unknown-tool' | 'not-found' };
