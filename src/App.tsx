@@ -29,7 +29,7 @@ import MarkdownViewer from './components/MarkdownViewer';
 import AiAssistant from './components/AiAssistant';
 import AboutPage from './components/AboutPage';
 import { Analytics } from '@vercel/analytics/react';
-import { parseShareHash } from './services/shareService';
+import ShareResolver from './components/ShareResolver';
 import ShareErrorDialog from './components/ShareErrorDialog';
 
 const TOOL_PATHS: Record<ToolType, string> = {
@@ -103,20 +103,14 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    const result = parseShareHash();
-    if (result.type === 'payload') {
-      setShareInitialState(result.data.state);
-      setShareTargetTool(result.data.tool);
-      setShareKey(Date.now().toString());
-      navigate(TOOL_PATHS[result.data.tool], { replace: true });
-    } else if (result.type === 'error') {
-      const message = result.reason === 'unknown-tool'
-        ? "This share link references a tool that doesn't exist. The app has loaded normally."
-        : 'This share link appears to be broken or incomplete. The app has loaded normally.';
-      setShareErrorMessage(message);
-    }
-  }, []);
+  const handleShareResolved = (tool: ToolType, state: Record<string, string>) => {
+    const effectiveTool =
+      tool === ToolType.COUNTER || tool === ToolType.SPLITTER ? ToolType.ANALYZER : tool;
+    setShareInitialState(state);
+    setShareTargetTool(effectiveTool);
+    setShareKey(Date.now().toString());
+    navigate(TOOL_PATHS[effectiveTool], { replace: true });
+  };
 
   const tools = [
     { id: ToolType.ANALYZER, name: 'Text Analyzer', icon: <ScanText size={20} /> },
@@ -330,6 +324,18 @@ const App: React.FC = () => {
               <Route path="/markdown-viewer" element={<MarkdownViewer key={shareKey} initialState={si(ToolType.MARKDOWN)} />} />
               <Route path="/ai-assistant" element={<AiAssistant key={shareKey} initialState={si(ToolType.AI_ASSISTANT)} />} />
               <Route path="/about" element={<AboutPage />} />
+              <Route
+                path="/s/:id"
+                element={
+                  <ShareResolver
+                    onResolved={handleShareResolved}
+                    onError={(msg) => {
+                      setShareErrorMessage(msg);
+                      navigate('/text-analyzer', { replace: true });
+                    }}
+                  />
+                }
+              />
               <Route path="*" element={<Navigate to="/text-analyzer" replace />} />
             </Routes>
           </div>
