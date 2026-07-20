@@ -13,12 +13,13 @@ import MarkdownViewer from './MarkdownViewer';
 import AiAssistant from './AiAssistant';
 
 interface ShareResolverProps {
+  onToolResolved?: (tool: ToolType) => void;
   onError: (message: string) => void;
 }
 
 type Resolved = { tool: ToolType; state: Record<string, string> };
 
-const ShareResolver: React.FC<ShareResolverProps> = ({ onError }) => {
+const ShareResolver: React.FC<ShareResolverProps> = ({ onToolResolved, onError }) => {
   const { id } = useParams<{ id: string }>();
   const hasRun = useRef(false);
   const [resolved, setResolved] = useState<Resolved | null>(null);
@@ -45,6 +46,7 @@ const ShareResolver: React.FC<ShareResolverProps> = ({ onError }) => {
               ? ToolType.ANALYZER
               : result.data.tool;
           setResolved({ tool, state: result.data.state });
+          onToolResolved?.(tool);
         } else {
           const message =
             result.reason === 'not-found'

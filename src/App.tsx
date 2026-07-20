@@ -70,8 +70,9 @@ const App: React.FC = () => {
 
   const [isScrollingAllowed, setIsScrollingAllowed] = useState(!isCollapsed);
   const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
+  const [shareActiveTool, setShareActiveTool] = useState<ToolType | null>(null);
 
-  const activeTool = toolFromPath(location.pathname);
+  const activeTool = toolFromPath(location.pathname) ?? shareActiveTool;
 
   useEffect(() => {
     if (isCollapsed) {
@@ -310,6 +311,7 @@ const App: React.FC = () => {
                 path="/s/:id"
                 element={
                   <ShareResolver
+                    onToolResolved={setShareActiveTool}
                     onError={(msg) => {
                       setShareErrorMessage(msg);
                       navigate('/text-analyzer', { replace: true });
