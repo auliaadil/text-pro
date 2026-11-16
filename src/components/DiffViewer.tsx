@@ -3,12 +3,12 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState';
 import * as Diff from 'diff';
 import ToolLayout from './ToolLayout';
-import { FileDiff, Columns, ArrowLeft, ArrowLeftRight, AlignJustify, Type, AlignLeft, Trash2, Plus, X } from 'lucide-react';
+import { FileDiff, Columns, ArrowLeft, ArrowLeftRight, AlignJustify, Type, AlignLeft, Trash2, Plus, X, Layers } from 'lucide-react';
 import { ToolType } from '../types';
 
 type DiffMode = 'lines' | 'words' | 'chars';
 
-type ViewLayout = 'unified' | 'split';
+type ViewLayout = 'unified' | 'split' | 'all';
 
 type SplitRow = {
   type: 'unchanged' | 'changed' | 'removed' | 'added';
@@ -65,6 +65,103 @@ function buildSplitRows(diffResult: Diff.Change[]): SplitRow[] {
 
   return rows;
 }
+
+type MultiCell =
+  | { kind: 'same' | 'changed' | 'added'; text: string; lineNum: number }
+  | { kind: 'removed' | 'empty' };
+
+type MultiRow = {
+  base: { text: string; lineNum: number } | null;
+  cells: MultiCell[];
+  differs: boolean;
+};
+
+const splitIntoLines = (value: string): string[] => {
+  const lines = value.split('\n');
+  if (lines[lines.length - 1] === '') lines.pop();
+  return lines;
+};
+
+/**
+ * Align every target against the base so the same base line sits on the same row
+ * in every column. Lines a target inserts get their own rows between base lines.
+ */
+function buildMultiRows(baseText: string, targets: string[]): MultiRow[] {
+  const baseLines = splitIntoLines(baseText);
+  const B = baseLines.length;
+
+  const alignments = targets.map(targetText => {
+    const atBase: MultiCell[] = new Array(B).fill(null).map(() => ({ kind: 'removed' as const }));
+    const inserts: { text: string; lineNum: number }[][] = Array.from({ length: B + 1 }, () => []);
+    const parts = Diff.diffLines(baseText, targetText);
+    let bi = 0;
+    let tl = 1;
+    let i = 0;
+    while (i < parts.length) {
+      const part = parts[i];
+      if (!part.added && !part.removed) {
+        for (const text of splitIntoLines(part.value)) {
+          atBase[bi++] = { kind: 'same', text, lineNum: tl++ };
+        }
+        i++;
+        continue;
+      }
+      const removed: string[] = [];
+      const added: string[] = [];
+      while (i < parts.length && (parts[i].added || parts[i].removed)) {
+        (parts[i].removed ? removed : added).push(...splitIntoLines(parts[i].value));
+        i++;
+      }
+      const paired = Math.min(removed.length, added.length);
+      for (let k = 0; k < paired; k++) {
+        atBase[bi + k] = { kind: 'changed', text: added[k], lineNum: tl++ };
+      }
+      // Base lines beyond the paired ones stay 'removed' (the default).
+      for (let k = paired; k < added.length; k++) {
+        inserts[bi + removed.length].push({ text: added[k], lineNum: tl++ });
+      }
+      bi += removed.length;
+    }
+    return { atBase, inserts };
+  });
+
+  const rows: MultiRow[] = [];
+  for (let g = 0; g <= B; g++) {
+    const maxIns = Math.max(0, ...alignments.map(a => a.inserts[g].length));
+    for (let r = 0; r < maxIns; r++) {
+      rows.push({
+        base: null,
+        cells: alignments.map(a => {
+          const ins = a.inserts[g][r];
+          return ins ? { kind: 'added', ...ins } : { kind: 'empty' };
+        }),
+        differs: true,
+      });
+    }
+    if (g < B) {
+      const cells = alignments.map(a => a.atBase[g]);
+      rows.push({
+        base: { text: baseLines[g], lineNum: g + 1 },
+        cells,
+        differs: cells.some(c => c.kind !== 'same'),
+      });
+    }
+  }
+  return rows;
+}
+
+/** Render a changed line, highlighting the words that differ from the base line. */
+const renderChangedText = (baseLine: string, line: string) =>
+  Diff.diffWordsWithSpace(baseLine, line).map((part, i) =>
+    part.removed ? null : (
+      <span
+        key={i}
+        className={part.added ? 'bg-amber-200/70 dark:bg-amber-500/30 rounded-sm' : undefined}
+      >
+        {part.value}
+      </span>
+    )
+  );
 
 type Board = { id: string; label: string; text: string };
 
@@ -182,7 +279,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
   }, []);
 
   useEffect(() => {
-    if (viewLayout === 'split' && mode !== 'lines') setMode('lines');
+    if (viewLayout !== 'unified' && mode !== 'lines') setMode('lines');
   }, [viewLayout]);
 
   // Resolve base/target, falling back to sensible defaults when unset or removed.
@@ -275,7 +372,92 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
     }
   }, [textA, textB, showDiff, mode]);
 
+  // 'All sources' needs at least two targets to be meaningful; otherwise it's just split view.
+  const layout: ViewLayout = viewLayout === 'all' && boards.length < 3 ? 'split' : viewLayout;
+
+  const otherBoards = useMemo(
+    () => boards.map((b, i) => ({ board: b, index: i })).filter(({ index }) => index !== baseIndex),
+    [boards, baseIndex]
+  );
+
+  const multiRows = useMemo(() => {
+    if (!showDiff || layout !== 'all') return [];
+    return buildMultiRows(base.text, otherBoards.map(o => o.board.text));
+  }, [showDiff, layout, base.text, otherBoards]);
+
+  const renderStat = (id: string) => {
+    const stat = boardStats[id];
+    if (!stat) return null;
+    return stat.identical ? (
+      <span className="text-[10px] font-medium normal-case tracking-normal text-slate-400">identical</span>
+    ) : (
+      <span className="flex items-center gap-1 font-mono text-[10px] normal-case tracking-normal">
+        <span className="text-green-600 dark:text-green-400">+{stat.added}</span>
+        <span className="text-red-600 dark:text-red-400">−{stat.removed}</span>
+      </span>
+    );
+  };
+
+  const renderMultiView = () => {
+    const columns = otherBoards.length + 1;
+    const gridStyle = { gridTemplateColumns: `repeat(${columns}, minmax(240px, 1fr))` };
+    const lineNumCls = 'w-8 shrink-0 select-none text-right text-xs pt-0.5 text-slate-300 dark:text-slate-600';
+    const headerCls = 'sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest bg-slate-50 dark:bg-slate-950 border-b border-r border-slate-100 dark:border-slate-800';
+
+    return (
+      <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-slate-900">
+        <div className="grid font-mono text-sm min-w-max md:min-w-0" style={gridStyle}>
+          <div className={`${headerCls} text-blue-600 dark:text-blue-400`}>
+            <span className="truncate">{baseName}</span>
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">Base</span>
+          </div>
+          {otherBoards.map(({ board, index }) => (
+            <div key={board.id} className={`${headerCls} text-slate-400 dark:text-slate-500`}>
+              <span className="truncate">{boardName(board, index)}</span>
+              {renderStat(board.id)}
+            </div>
+          ))}
+
+          {multiRows.map((row, r) => (
+            <React.Fragment key={r}>
+              <div
+                className={`flex items-start gap-2 px-2 py-0.5 border-r border-slate-100 dark:border-slate-800 ${
+                  row.base ? (row.differs ? 'bg-slate-50 dark:bg-slate-800/40' : '') : 'bg-slate-50/60 dark:bg-slate-950/60'
+                }`}
+              >
+                <span className={lineNumCls}>{row.base?.lineNum ?? ''}</span>
+                <span className="whitespace-pre-wrap break-all text-slate-600 dark:text-slate-400">{row.base?.text ?? ''}</span>
+              </div>
+              {row.cells.map((cell, c) => {
+                const cls =
+                  cell.kind === 'changed' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200'
+                  : cell.kind === 'added' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                  : cell.kind === 'removed' ? 'bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400/70'
+                  : cell.kind === 'empty' ? 'bg-slate-50/60 dark:bg-slate-950/60'
+                  : 'text-slate-600 dark:text-slate-400';
+                return (
+                  <div key={c} className={`flex items-start gap-2 px-2 py-0.5 border-r border-slate-100 dark:border-slate-800 ${cls}`}>
+                    <span className={lineNumCls}>{'lineNum' in cell ? cell.lineNum : ''}</span>
+                    {cell.kind === 'removed' ? (
+                      <span className="whitespace-pre-wrap break-all line-through opacity-70 select-none">{row.base?.text || ' '}</span>
+                    ) : 'text' in cell ? (
+                      <span className="whitespace-pre-wrap break-all">
+                        {cell.kind === 'changed' && row.base ? renderChangedText(row.base.text, cell.text) : cell.text}
+                      </span>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
+    if (layout === 'all') return renderMultiView();
+
     if (textA === textB && textA) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 text-center">
@@ -286,7 +468,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
       );
     }
 
-    if (viewLayout === 'split') {
+    if (layout === 'split') {
       const rows = buildSplitRows(diffResult);
       return (
         <div className="flex flex-col flex-1 min-h-0">
@@ -445,7 +627,10 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
         ) : (
           <>
             <button
-              onClick={() => setShowDiff(true)}
+              onClick={() => {
+                if (boards.length > 2) setViewLayout('all');
+                setShowDiff(true);
+              }}
               disabled={!hasAnyText}
               className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -526,20 +711,24 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                   <option key={b.id} value={b.id}>{boardName(b, i)}</option>
                 ))}
               </select>
-              <button
+              {layout !== 'all' && <button
                 onClick={swapBaseAndTarget}
                 title="Swap base and compared source"
                 aria-label="Swap base and compared source"
                 className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors"
               >
                 <ArrowLeftRight size={14} />
-              </button>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">vs</span>
+              </button>}
+              {layout !== 'all' && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">vs</span>}
             </div>
+            {layout === 'all' ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Every source is lined up against the base. Rows that differ anywhere are shaded.
+              </p>
+            ) : (
             <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 pb-1 md:pb-0">
               {boards.map((b, i) => {
                 if (i === baseIndex) return null;
-                const stat = boardStats[b.id];
                 const active = i === targetIndex;
                 return (
                   <button
@@ -551,18 +740,12 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                     }`}
                   >
                     <span className="max-w-[140px] truncate">{boardName(b, i)}</span>
-                    {stat && (stat.identical ? (
-                      <span className="text-[10px] text-slate-400">identical</span>
-                    ) : (
-                      <span className="flex items-center gap-1 font-mono text-[10px]">
-                        <span className="text-green-600 dark:text-green-400">+{stat.added}</span>
-                        <span className="text-red-600 dark:text-red-400">−{stat.removed}</span>
-                      </span>
-                    ))}
+                    {renderStat(b.id)}
                   </button>
                 );
               })}
             </div>
+            )}
           </div>
 
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -574,12 +757,17 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <div className="w-3 h-3 bg-green-100 dark:bg-green-900/50 border border-green-200 dark:border-green-800 rounded"></div> Added
               </div>
+              {layout === 'all' && (
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  <div className="w-3 h-3 bg-amber-100 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-800 rounded"></div> Changed
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
               {/* Layout toggle */}
               <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                <button onClick={() => setViewLayout('unified')} className={toggleBtn(viewLayout === 'unified')}>
+                <button onClick={() => setViewLayout('unified')} className={toggleBtn(layout === 'unified')}>
                   <AlignJustify size={14} /> Unified
                 </button>
                 <button
@@ -587,10 +775,21 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                     setViewLayout('split');
                     if (mode !== 'lines') setMode('lines');
                   }}
-                  className={toggleBtn(viewLayout === 'split')}
+                  className={toggleBtn(layout === 'split')}
                 >
                   <Columns size={14} /> Split
                 </button>
+                {boards.length > 2 && (
+                  <button
+                    onClick={() => {
+                      setViewLayout('all');
+                      if (mode !== 'lines') setMode('lines');
+                    }}
+                    className={toggleBtn(layout === 'all')}
+                  >
+                    <Layers size={14} /> All sources
+                  </button>
+                )}
               </div>
 
               {/* Mode Selector */}
@@ -600,15 +799,15 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                 </button>
                 <button
                   onClick={() => setMode('words')}
-                  disabled={viewLayout === 'split'}
-                  className={toggleBtn(mode === 'words', viewLayout === 'split')}
+                  disabled={layout !== 'unified'}
+                  className={toggleBtn(mode === 'words', layout !== 'unified')}
                 >
                   <AlignLeft size={14} /> Words
                 </button>
                 <button
                   onClick={() => setMode('chars')}
-                  disabled={viewLayout === 'split'}
-                  className={toggleBtn(mode === 'chars', viewLayout === 'split')}
+                  disabled={layout !== 'unified'}
+                  className={toggleBtn(mode === 'chars', layout !== 'unified')}
                 >
                   <Type size={14} /> Chars
                 </button>
