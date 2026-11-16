@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState';
 import * as Diff from 'diff';
 import ToolLayout from './ToolLayout';
-import { FileDiff, Columns, ArrowLeft, AlignJustify, Type, AlignLeft, Trash2 } from 'lucide-react';
+import { FileDiff, Columns, ArrowLeft, ArrowLeftRight, AlignJustify, Type, AlignLeft, Trash2, Plus, X } from 'lucide-react';
 import { ToolType } from '../types';
 
 type DiffMode = 'lines' | 'words' | 'chars';
@@ -66,30 +66,186 @@ function buildSplitRows(diffResult: Diff.Change[]): SplitRow[] {
   return rows;
 }
 
+type Board = { id: string; label: string; text: string };
+
+const newId = () => Math.random().toString(36).slice(2, 10);
+
+const boardLetter = (index: number): string => {
+  let n = index;
+  let out = '';
+  do {
+    out = String.fromCharCode(65 + (n % 26)) + out;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return out;
+};
+
+const boardName = (board: Board, index: number) => board.label.trim() || `Source ${boardLetter(index)}`;
+
+/** Pull text from the old two-board storage keys so existing sessions aren't lost. */
+function readLegacyBoards(): Board[] {
+  const read = (key: string): string => {
+    try {
+      const raw = sessionStorage.getItem(key) ?? localStorage.getItem(key);
+      const val = raw !== null ? JSON.parse(raw) : '';
+      return typeof val === 'string' ? val : '';
+    } catch {
+      return '';
+    }
+  };
+  return [
+    { id: newId(), label: '', text: read('tp:diff:textA') },
+    { id: newId(), label: '', text: read('tp:diff:textB') },
+  ];
+}
+
+/** Parse boards from shared state. Supports the new `boards` JSON field and legacy `left`/`right`. */
+function boardsFromShareState(state: Record<string, string>): Board[] | null {
+  if (state.boards !== undefined) {
+    try {
+      const parsed = JSON.parse(state.boards);
+      if (!Array.isArray(parsed) || parsed.length < 2) return null;
+      const boards = parsed.map((b: unknown) => {
+        const obj = (b && typeof b === 'object' ? b : {}) as Record<string, unknown>;
+        return {
+          id: newId(),
+          label: typeof obj.label === 'string' ? obj.label : '',
+          text: typeof obj.text === 'string' ? obj.text : '',
+        };
+      });
+      return boards;
+    } catch {
+      return null;
+    }
+  }
+  if (state.left !== undefined || state.right !== undefined) {
+    return [
+      { id: newId(), label: '', text: state.left ?? '' },
+      { id: newId(), label: '', text: state.right ?? '' },
+    ];
+  }
+  return null;
+}
+
+const isValidBoards = (value: unknown): value is Board[] =>
+  Array.isArray(value) &&
+  value.length >= 2 &&
+  value.every(b => b && typeof b.id === 'string' && typeof b.label === 'string' && typeof b.text === 'string');
+
+const toggleBtn = (active: boolean, disabled = false) =>
+  `flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${active
+    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
+    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+  } ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`;
+
+const countLines = (value: string) => {
+  const lines = value.split('\n');
+  if (lines[lines.length - 1] === '') lines.pop();
+  return lines.length;
+};
+
 interface DiffViewerProps {
   initialState?: Record<string, string>;
 }
 
 const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
-  const [textA, setTextA] = usePersistedState('tp:diff:textA', '', true);
-  const [textB, setTextB] = usePersistedState('tp:diff:textB', '', true);
+  const [storedBoards, setBoards] = usePersistedState<Board[]>('tp:diff:boards', [], true);
+  const boards = useMemo(
+    () => (isValidBoards(storedBoards) ? storedBoards : readLegacyBoards()),
+    [storedBoards]
+  );
   const [showDiff, setShowDiff] = useState(false);
   const [mode, setMode] = usePersistedState<DiffMode>('tp:diff:mode', 'lines');
   const [viewLayout, setViewLayout] = usePersistedState<ViewLayout>('tp:diff:viewLayout', 'unified');
+  const [baseId, setBaseId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(null);
 
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
   const isSyncing = useRef(false);
 
   useEffect(() => {
-    if (initialState?.left !== undefined) setTextA(initialState.left);
-    if (initialState?.right !== undefined) setTextB(initialState.right);
-    if (initialState?.showDiff === 'true') setShowDiff(true);
+    if (!initialState) {
+      // Persist migrated legacy boards so they get stable ids.
+      if (!isValidBoards(storedBoards)) setBoards(boards);
+      return;
+    }
+    const shared = boardsFromShareState(initialState);
+    if (shared) {
+      setBoards(shared);
+      const baseIdx = Number(initialState.base);
+      const targetIdx = Number(initialState.target);
+      if (Number.isInteger(baseIdx) && shared[baseIdx]) setBaseId(shared[baseIdx].id);
+      if (Number.isInteger(targetIdx) && shared[targetIdx]) setTargetId(shared[targetIdx].id);
+    }
+    if (initialState.showDiff === 'true') setShowDiff(true);
   }, []);
 
   useEffect(() => {
     if (viewLayout === 'split' && mode !== 'lines') setMode('lines');
   }, [viewLayout]);
+
+  // Resolve base/target, falling back to sensible defaults when unset or removed.
+  const baseIndex = Math.max(0, boards.findIndex(b => b.id === baseId));
+  const base = boards[baseIndex];
+  let targetIndex = boards.findIndex(b => b.id === targetId);
+  if (targetIndex === -1 || targetIndex === baseIndex) targetIndex = baseIndex === 0 ? 1 : 0;
+  const target = boards[targetIndex];
+  const textA = base.text;
+  const textB = target.text;
+  const baseName = boardName(base, baseIndex);
+  const targetName = boardName(target, targetIndex);
+
+  const updateBoard = (id: string, patch: Partial<Board>) =>
+    setBoards(boards.map(b => (b.id === id ? { ...b, ...patch } : b)));
+
+  const addBoard = () => setBoards([...boards, { id: newId(), label: '', text: '' }]);
+
+  const removeBoard = (id: string) => {
+    if (boards.length <= 2) return;
+    setBoards(boards.filter(b => b.id !== id));
+  };
+
+  const clearAll = () => {
+    setBoards([
+      { id: newId(), label: '', text: '' },
+      { id: newId(), label: '', text: '' },
+    ]);
+    setBaseId(null);
+    setTargetId(null);
+    setShowDiff(false);
+  };
+
+  const handleBaseChange = (id: string) => {
+    if (id === target.id) setTargetId(base.id);
+    setBaseId(id);
+  };
+
+  const swapBaseAndTarget = () => {
+    setBaseId(target.id);
+    setTargetId(base.id);
+  };
+
+  // Per-board line stats against the base, for the target tabs.
+  const boardStats = useMemo(() => {
+    if (!showDiff) return {} as Record<string, { added: number; removed: number; identical: boolean }>;
+    const stats: Record<string, { added: number; removed: number; identical: boolean }> = {};
+    boards.forEach(b => {
+      if (b.id === base.id) return;
+      if (b.text === base.text) {
+        stats[b.id] = { added: 0, removed: 0, identical: true };
+        return;
+      }
+      let added = 0;
+      let removed = 0;
+      for (const part of Diff.diffLines(base.text, b.text)) {
+        if (part.added) added += countLines(part.value);
+        else if (part.removed) removed += countLines(part.value);
+      }
+      stats[b.id] = { added, removed, identical: false };
+    });
+    return stats;
+  }, [boards, base.id, base.text, showDiff]);
 
   const handleLeftScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (isSyncing.current) return;
@@ -125,7 +281,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
         <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 text-center">
           <FileDiff size={48} className="mx-auto opacity-20 text-slate-400 mb-4" />
           <h3 className="text-lg font-medium text-slate-600 dark:text-slate-300">Text is identical</h3>
-          <p className="text-sm text-slate-400 mt-1">No differences were found between the original and new text.</p>
+          <p className="text-sm text-slate-400 mt-1">No differences were found between {baseName} and {targetName}.</p>
         </div>
       );
     }
@@ -136,11 +292,11 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
         <div className="flex flex-col flex-1 min-h-0">
           {/* Column headers */}
           <div className="grid grid-cols-2 shrink-0 border-b border-slate-100 dark:border-slate-800">
-            <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-r border-slate-100 dark:border-slate-800">
-              Original (A)
+            <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-r border-slate-100 dark:border-slate-800 truncate">
+              {baseName}
             </div>
-            <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-              New (B)
+            <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate">
+              {targetName}
             </div>
           </div>
           {/* Two scrollable panels */}
@@ -265,11 +421,19 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
     );
   };
 
+  const hasAnyText = boards.some(b => b.text);
+  const compact = boards.length <= 2;
+
   return (
     <ToolLayout
-      description="Compare two text sources to identify additions, removals, and changes with varying levels of granularity."
+      description="Compare any number of text sources. Pick a base and see additions, removals, and changes in every other source against it."
       shareToolType={ToolType.DIFF}
-      shareState={{ left: textA, right: textB, ...(showDiff && { showDiff: 'true' }) }}
+      shareState={{
+        boards: JSON.stringify(boards.map(b => ({ label: b.label, text: b.text }))),
+        base: String(baseIndex),
+        target: String(targetIndex),
+        ...(showDiff && { showDiff: 'true' }),
+      }}
       actions={
         showDiff ? (
           <button
@@ -282,13 +446,13 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
           <>
             <button
               onClick={() => setShowDiff(true)}
-              disabled={!textA && !textB}
+              disabled={!hasAnyText}
               className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FileDiff size={16} /> Compare
             </button>
             <button
-              onClick={() => { setTextA(''); setTextB(''); setShowDiff(false); }}
+              onClick={clearAll}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
             >
               <Trash2 size={16} /> Clear
@@ -298,28 +462,109 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
       }
     >
       {!showDiff ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 flex-1 min-h-0 overflow-y-auto">
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Original Text (A)</label>
-            <textarea
-              value={textA}
-              onChange={(e) => setTextA(e.target.value)}
-              className="w-full flex-1 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none"
-              placeholder="Paste original text here..."
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">New Text (B)</label>
-            <textarea
-              value={textB}
-              onChange={(e) => setTextB(e.target.value)}
-              className="w-full flex-1 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none"
-              placeholder="Paste modified text here..."
-            />
-          </div>
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 ${compact ? '' : 'xl:grid-cols-3'} gap-6 p-6 flex-1 min-h-0 overflow-y-auto ${compact ? 'md:auto-rows-fr' : 'content-start'}`}
+        >
+          {boards.map((board, index) => (
+            <div key={board.id} className={`flex flex-col gap-2 ${compact ? 'min-h-[220px]' : 'h-72'}`}>
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">
+                  {boardLetter(index)}
+                </span>
+                <input
+                  value={board.label}
+                  onChange={(e) => updateBoard(board.id, { label: e.target.value })}
+                  placeholder={`Source ${boardLetter(index)}`}
+                  aria-label={`Name for source ${boardLetter(index)}`}
+                  className="flex-1 min-w-0 bg-transparent text-xs font-semibold text-slate-600 dark:text-slate-300 placeholder-slate-400 border-b border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 focus:outline-none py-0.5"
+                />
+                {index === baseIndex && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                    Base
+                  </span>
+                )}
+                {boards.length > 2 && (
+                  <button
+                    onClick={() => removeBoard(board.id)}
+                    title="Remove source"
+                    aria-label={`Remove ${boardName(board, index)}`}
+                    className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              <textarea
+                value={board.text}
+                onChange={(e) => updateBoard(board.id, { text: e.target.value })}
+                className="w-full flex-1 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none transition-all focus:outline-none"
+                placeholder={index === 0 ? 'Paste original text here...' : 'Paste text to compare here...'}
+              />
+            </div>
+          ))}
+          <button
+            onClick={addBoard}
+            className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors ${compact ? 'min-h-[120px] md:col-span-2 md:min-h-0 md:py-4 md:flex-row' : 'h-72'}`}
+          >
+            <Plus size={20} />
+            <span className="text-sm font-medium">Add source</span>
+          </button>
         </div>
       ) : (
         <div className="flex flex-col flex-1 min-h-0">
+          {/* Source picker */}
+          <div className="px-3 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
+              <label htmlFor="diff-base" className="text-xs font-bold text-slate-400 uppercase tracking-widest">Base</label>
+              <select
+                id="diff-base"
+                value={base.id}
+                onChange={(e) => handleBaseChange(e.target.value)}
+                className="max-w-[180px] text-xs font-medium bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {boards.map((b, i) => (
+                  <option key={b.id} value={b.id}>{boardName(b, i)}</option>
+                ))}
+              </select>
+              <button
+                onClick={swapBaseAndTarget}
+                title="Swap base and compared source"
+                aria-label="Swap base and compared source"
+                className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors"
+              >
+                <ArrowLeftRight size={14} />
+              </button>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">vs</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 pb-1 md:pb-0">
+              {boards.map((b, i) => {
+                if (i === baseIndex) return null;
+                const stat = boardStats[b.id];
+                const active = i === targetIndex;
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => setTargetId(b.id)}
+                    className={`flex items-center gap-2 shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${active
+                      ? 'bg-white dark:bg-slate-900 border-blue-500 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <span className="max-w-[140px] truncate">{boardName(b, i)}</span>
+                    {stat && (stat.identical ? (
+                      <span className="text-[10px] text-slate-400">identical</span>
+                    ) : (
+                      <span className="flex items-center gap-1 font-mono text-[10px]">
+                        <span className="text-green-600 dark:text-green-400">+{stat.added}</span>
+                        <span className="text-red-600 dark:text-red-400">−{stat.removed}</span>
+                      </span>
+                    ))}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Legend */}
             <div className="flex items-center gap-6">
@@ -334,13 +579,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
             <div className="flex items-center gap-2">
               {/* Layout toggle */}
               <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                <button
-                  onClick={() => setViewLayout('unified')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewLayout === 'unified'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
-                >
+                <button onClick={() => setViewLayout('unified')} className={toggleBtn(viewLayout === 'unified')}>
                   <AlignJustify size={14} /> Unified
                 </button>
                 <button
@@ -348,10 +587,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
                     setViewLayout('split');
                     if (mode !== 'lines') setMode('lines');
                   }}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewLayout === 'split'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
+                  className={toggleBtn(viewLayout === 'split')}
                 >
                   <Columns size={14} /> Split
                 </button>
@@ -359,32 +595,20 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ initialState }) => {
 
               {/* Mode Selector */}
               <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                <button
-                  onClick={() => setMode('lines')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'lines'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
-                >
+                <button onClick={() => setMode('lines')} className={toggleBtn(mode === 'lines')}>
                   <AlignJustify size={14} /> Lines
                 </button>
                 <button
                   onClick={() => setMode('words')}
                   disabled={viewLayout === 'split'}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'words'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    } ${viewLayout === 'split' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                  className={toggleBtn(mode === 'words', viewLayout === 'split')}
                 >
                   <AlignLeft size={14} /> Words
                 </button>
                 <button
                   onClick={() => setMode('chars')}
                   disabled={viewLayout === 'split'}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${mode === 'chars'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    } ${viewLayout === 'split' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                  className={toggleBtn(mode === 'chars', viewLayout === 'split')}
                 >
                   <Type size={14} /> Chars
                 </button>
