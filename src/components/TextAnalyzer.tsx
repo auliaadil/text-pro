@@ -39,30 +39,21 @@ const DelimiterPicker: React.FC<DelimiterPickerProps> = ({
   charLimit, setCharLimit,
 }) => {
   const [showCharPicker, setShowCharPicker] = useState(false);
-  const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
         setShowCharPicker(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
     };
   }, []);
-
-  const handleCharEnter = () => {
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-    setShowCharPicker(true);
-  };
-
-  const handleCharLeave = () => {
-    hoverTimeout.current = setTimeout(() => setShowCharPicker(false), 200);
-  };
 
   const charPillLabel = delimiter === 'character'
     ? `Character · ${charDelimiter === '\t' ? 'Tab' : charDelimiter}`
@@ -83,12 +74,10 @@ const DelimiterPicker: React.FC<DelimiterPickerProps> = ({
           New Line
         </button>
 
-        {/* Character pill with hover popover */}
+        {/* Character pill with click popover */}
         <div
           ref={pickerRef}
           className="relative"
-          onMouseEnter={handleCharEnter}
-          onMouseLeave={handleCharLeave}
         >
           <button
             onClick={() => {
@@ -392,7 +381,7 @@ const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ initialState }) => {
                         </div>
                         <button
                           onClick={() => handleCopy(result, 'Chunk copied to clipboard')}
-                          className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-blue-600 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                           title="Copy this chunk"
                         >
                           <Copy size={14} />
